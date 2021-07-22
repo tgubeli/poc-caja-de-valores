@@ -27,6 +27,7 @@ import quickfix.SessionID;
 import quickfix.SessionSettings;
 import quickfix.UnsupportedMessageType;
 import quickfix.field.ApplVerID;
+import quickfix.field.MsgType;
 import quickfix.field.OrdType;
 
 public class OrderApplication implements quickfix.Application {
@@ -68,6 +69,18 @@ public class OrderApplication implements quickfix.Application {
                 LocalDateTime inicio = LocalDateTime.parse(t.headers().get("publishTimestamp"));
                 LocalDateTime now = LocalDateTime.now();
                 LOG.infof("session %s time: %s ms", sessionID, (ChronoUnit.MILLIS.between(inicio, now)));
+                try {
+                	//msg fixed, invalid, sorry
+                	String msg = "8=FIX.4.49=12835=D34=449=BANZAI52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
+            		MsgType identifyType = Message.identifyType(msg);
+            		System.out.println(identifyType);
+            		Message message = new Message();
+            		message.fromString(msg, null, false);
+					Session.sendToTarget(message, sessionID);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
             }
         };
         //add 2 consumers
