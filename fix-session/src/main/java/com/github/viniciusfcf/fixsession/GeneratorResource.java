@@ -20,6 +20,7 @@ import io.vertx.mutiny.core.eventbus.EventBus;
 @Path("/generator")
 public class GeneratorResource {
 
+
     @Inject
     EventBus eventBus;
 
@@ -35,7 +36,8 @@ public class GeneratorResource {
         log.info(("------------starting generation------"));
         for (int i = 0; i < threads; i++) {
             Supplier<Integer> publisher = new Supplier<Integer>() {
-                public Integer get() {
+                @Override
+				public Integer get() {
                     long inicio = System.currentTimeMillis();
                     for (int i = 0; i < size; i++) {
                         eventBus.publish("quotas", "Quota: "+i, new DeliveryOptions().addHeader("publishTimestamp", LocalDateTime.now().toString()));

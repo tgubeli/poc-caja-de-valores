@@ -2,12 +2,9 @@ package com.github.vinicius.fixclient;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.util.Properties;
-import java.util.concurrent.Executor;
 
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.annotations.QuarkusMain;
-import quickfix.ConfigError;
 import quickfix.DefaultMessageFactory;
 import quickfix.FileStoreFactory;
 import quickfix.Initiator;
@@ -47,9 +44,17 @@ public class ClientMain {
             System.out.println("Logged On?? "+initiator.isLoggedOn());
             Quarkus.run(args); 
             Quarkus.waitForExit();
+            logout();
+        }
+        
+    }
+    
+    public static void logout() {
+        for (SessionID sessionId : initiator.getSessions()) {
+            Session.lookupSession(sessionId).logout("user requested");
         }
     }
-
+    
     private static InputStream getSettingsInputStream() throws FileNotFoundException {
     	InputStream inputStream = ClientMain.class.getResourceAsStream("settings.cfg");
         if (inputStream == null) {
