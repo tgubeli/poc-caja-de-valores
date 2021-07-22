@@ -1,7 +1,10 @@
 package com.github.vinicius.fixclient;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.annotations.QuarkusMain;
@@ -22,12 +25,12 @@ public class ClientMain {
 	
 	private static Initiator initiator = null;
     
-    public static void main(String ... args) throws Exception {
+    public static void main(String[] args) throws Exception {
         System.out.println("Running main method");
-        try (InputStream inputStream = getSettingsInputStream()){
+        try (InputStream inputStream = getSettingsInputStream(args)){
             SessionSettings settings = new SessionSettings(inputStream);
 
-            boolean logHeartbeats = Boolean.valueOf(System.getProperty("logHeartbeats", "true"));
+            boolean logHeartbeats = Boolean.valueOf(System.getProperty("logHeartbeats", "false"));
 
             MyApplication application = new MyApplication();
             MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
@@ -55,8 +58,15 @@ public class ClientMain {
         }
     }
     
-    private static InputStream getSettingsInputStream() throws FileNotFoundException {
-    	InputStream inputStream = ClientMain.class.getResourceAsStream("settings.cfg");
+    private static InputStream getSettingsInputStream(String[] args) throws FileNotFoundException {
+    	InputStream inputStream = null;
+		System.out.println(Arrays.toString(args));
+		if(args.length == 1) {
+			System.out.println("Arquito de conf: "+args[0]);
+			inputStream = new FileInputStream(new File(args[0]));
+		}else {
+			inputStream = ClientMain.class.getResourceAsStream("settings.cfg");	
+		}
         if (inputStream == null) {
             System.out.println("usage: " + ClientMain.class.getName() + " [configFile].");
             System.exit(1);
