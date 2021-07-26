@@ -40,7 +40,11 @@ public class GeneratorResource {
 				public Integer get() {
                     long inicio = System.currentTimeMillis();
                     for (int i = 0; i < size; i++) {
-                        eventBus.publish("quotas", "Quota: "+i, new DeliveryOptions().addHeader("publishTimestamp", LocalDateTime.now().toString()));
+                        String msg = "8=FIX.4.49=12835=D34=449=BANZAI52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
+                        DeliveryOptions deliveryOptions = new DeliveryOptions();
+						String string = LocalDateTime.now().toString();
+						deliveryOptions.addHeader("publishTimestamp", string);
+						eventBus.send("quotas", msg, deliveryOptions);
                     }
                     long fim = System.currentTimeMillis();
                     log.infof("Time to publish: %s ms", (fim-inicio));
