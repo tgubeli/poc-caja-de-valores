@@ -15,8 +15,8 @@
     <quarkus.platform.artifact-id>quarkus-universe-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.version>2.0.3.Final</quarkus.platform.version>
-    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <quickfix-plugin.version>2.3.0</quickfix-plugin.version>
+    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -30,7 +30,7 @@
     </dependencies>
   </dependencyManagement>
   <dependencies>
-  	<dependency>
+    <dependency>
       <groupId>org.quickfixj</groupId>
       <artifactId>quickfixj-core</artifactId>
       <version>${quickfix-plugin.version}</version>
@@ -51,6 +51,14 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-vertx</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-openshift</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-openapi</artifactId>
     </dependency>
     <dependency>
       <groupId>io.rest-assured</groupId>
