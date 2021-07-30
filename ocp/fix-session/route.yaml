@@ -1,0 +1,11 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+spec:
+  host: fix-session-poc-caja-valores.apps.cluster-5987.5987.sandbox1736.opentlc.com
+  to:
+    kind: Service
+    name: fix-session
+    weight: 100
+  port:
+    targetPort: 8080
+  wildcardPolicy: None
