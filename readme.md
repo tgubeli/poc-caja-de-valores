@@ -1,6 +1,8 @@
 # FIX messaging over Openshift
 ## _This is a PoC for testing a FIX Messaging architecture over Openshift_
 
+[![stability][0]][1]
+
 This is a PoC intended to test an architecture that will run a FIX Messaging System with Iniciators and Acceptors over Openshift.
 
 ## Installation
