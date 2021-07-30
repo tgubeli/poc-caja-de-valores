@@ -44,7 +44,7 @@ public class GeneratorResource {
                         DeliveryOptions deliveryOptions = new DeliveryOptions();
 						String string = LocalDateTime.now().toString();
 						deliveryOptions.addHeader("publishTimestamp", string);
-						eventBus.send("quotas", msg, deliveryOptions);
+						eventBus.publish("quotas", msg, deliveryOptions);
                     }
                     long fim = System.currentTimeMillis();
                     log.infof("Time to publish: %s ms", (fim-inicio));
@@ -55,6 +55,6 @@ public class GeneratorResource {
             
         }
 
-        return "OK";
+        return "{status:OK, threads: "+threads+", messagesPerThread: "+size+", totalMessagesGenerated: "+threads*size+"}";
     }
 }
