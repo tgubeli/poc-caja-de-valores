@@ -2,6 +2,8 @@
 ## _This is a PoC for testing a FIX Messaging architecture over Openshift_
 
 ![](https://img.shields.io/badge/build-sucess-green)
+![](https://img.shields.io/badge/release-1.0.0.SNAPSHOT-blue)
+![](https://img.shields.io/badge/coverage-10%-red)
 
 This is a PoC intended to test an architecture that will run a FIX Messaging System with Iniciators and Acceptors over Openshift.
 
