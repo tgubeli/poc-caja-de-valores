@@ -12,7 +12,6 @@ import quickfix.UtcTimestampPrecision;
 
 public class MarketDataGenerator implements Runnable {
 
-
 	@Inject
 	Logger log;
 
@@ -29,8 +28,6 @@ public class MarketDataGenerator implements Runnable {
 	public void setQuantity(int quantity) {
 		this.quantity = quantity;
 	}
-
-
 
 	public void setPlay(boolean play) {
 		this.play = play;
@@ -51,7 +48,8 @@ public class MarketDataGenerator implements Runnable {
 	public void generateMarketData() {
 		System.out.println(("------------generando------"));
 		time = System.currentTimeMillis();
-		Long timestamp; 
+		Long timestamp;
+		long tiempo_restante_loop = 0;
 		double d;
 		for (int i = 0; i <= quantity; i++) {
 			Message message = new Message();
@@ -64,23 +62,29 @@ public class MarketDataGenerator implements Runnable {
 				e.printStackTrace();
 			}
 			CircularList.getInstance().insert(message);
-			if (System.currentTimeMillis()-time >= interval) {
-				System.out.println("Tiempo excedido para ciclo generación de market data en el intervalo. Generado " + quantity);
+			if (System.currentTimeMillis() - time >= interval) {
+				System.out.println(
+						"**ATENCION!!** Tiempo excedido para ciclo generación de market data en el intervalo. Generado "
+								+ quantity);
 				break;
 			}
-	
+
 		}
+
+		System.out.println(("generado " + quantity));
+		tiempo_restante_loop = interval - (System.currentTimeMillis() - time);
+		if (tiempo_restante_loop > 0) {
+			esperar(tiempo_restante_loop);
+		}
+
+	}
+
+	private void esperar(long tiempo_restante_loop) {
 		try {
-			System.out.println(("generado " + quantity));
-			Thread.currentThread().sleep(interval - (System.currentTimeMillis()-time));
+			Thread.currentThread().sleep(tiempo_restante_loop);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
 
-
-
 }
-
-
-
