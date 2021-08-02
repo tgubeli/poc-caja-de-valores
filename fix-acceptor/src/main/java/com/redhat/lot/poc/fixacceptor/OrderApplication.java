@@ -1,17 +1,10 @@
 package com.redhat.lot.poc.fixacceptor;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.function.Consumer;
-
-import javax.enterprise.inject.spi.CDI;
-
 import org.jboss.logging.Logger;
 
-import io.vertx.mutiny.core.eventbus.EventBus;
 import quickfix.ConfigError;
 import quickfix.DoNotSend;
 import quickfix.FieldConvertError;
@@ -33,6 +26,8 @@ public class OrderApplication implements quickfix.Application {
     private static final String VALID_ORDER_TYPES_KEY = "ValidOrderTypes";
 
     private final HashSet<String> validOrderTypes = new HashSet<>();
+    
+    FixSessionSender sender;
 
     public OrderApplication(SessionSettings settings) throws ConfigError, FieldConvertError {
         initializeValidOrderTypes(settings);
@@ -57,32 +52,13 @@ public class OrderApplication implements quickfix.Application {
 
     @Override
 	public void onLogon(SessionID sessionID) {
-    	EventBus eventBus = CDI.current().select(EventBus.class).get();
-    	Consumer<io.vertx.mutiny.core.eventbus.Message<String>> consumer = new Consumer<io.vertx.mutiny.core.eventbus.Message<String>>() {
-            @Override
-			public void accept(io.vertx.mutiny.core.eventbus.Message<String> eventBusMsg) {
+    	
+      ;
+      LOG.infof("logon");
+    	sender = new FixSessionSender(sessionID);
+    	Thread thread = new Thread(sender);
+    	thread.start();   	
 
-            	LocalDateTime inicio = LocalDateTime.parse(eventBusMsg.headers().get("publishTimestamp"));
-                LocalDateTime now = LocalDateTime.now();
-                
-                LOG.infof("session %s time: %s ms", sessionID, (ChronoUnit.MILLIS.between(inicio, now)));
-                
-                try {
-                    String msg = eventBusMsg.body();
-                    // TODO identifyType should be necessary
-            		// MsgType identifyType = Message.identifyType(msg);
-            		// System.out.println(identifyType);
-            		Message message = new Message();
-            		message.fromString(msg, null, false);
-					Session.sendToTarget(message, sessionID);
-				} catch (Exception e) {
-                    LOG.debug("Error", e);
-				}
-            }
-            
-        };
-        
-        eventBus.localConsumer("quotas", consumer);
     	System.out.println("OrderApplication.onLogon() "+sessionID);
     }
 
@@ -90,6 +66,7 @@ public class OrderApplication implements quickfix.Application {
 	public void onLogout(SessionID sessionID) {
     	//FIXME remove localEventBus consumer
     	System.out.println("OrderApplication.onLogout() "+sessionID);
+    	//TODO Destruir el thread
     }
 
     @Override

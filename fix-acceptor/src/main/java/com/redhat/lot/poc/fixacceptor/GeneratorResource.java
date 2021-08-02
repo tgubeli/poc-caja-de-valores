@@ -20,10 +20,6 @@ import io.vertx.mutiny.core.eventbus.EventBus;
 @Path("/generator")
 public class GeneratorResource {
 
-
-    @Inject
-    EventBus eventBus;
-
     @Inject
     Logger log;
 
@@ -32,29 +28,18 @@ public class GeneratorResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String generate(@QueryParam(value = "sizePerThread") @DefaultValue(value = "1000") Integer size, @QueryParam(value = "threads") @DefaultValue(value = "1") Integer threads) {
+    public String generate(@QueryParam(value = "sizePerThread") @DefaultValue(value = "1000") Integer size, @QueryParam(value = "interval") @DefaultValue(value = "100") Integer interval) {
         log.info(("------------starting generation------"));
-        for (int i = 0; i < threads; i++) {
-            Supplier<Integer> publisher = new Supplier<Integer>() {
-                @Override
-				public Integer get() {
-                    long inicio = System.currentTimeMillis();
-                    for (int i = 0; i < size; i++) {
-                        String msg = "8=FIX.4.49=12835=D34=449=BANZAI52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
-                        DeliveryOptions deliveryOptions = new DeliveryOptions();
-						String string = LocalDateTime.now().toString();
-						deliveryOptions.addHeader("publishTimestamp", string);
-						eventBus.publish("quotas", msg, deliveryOptions);
-                    }
-                    long fim = System.currentTimeMillis();
-                    log.infof("Time to publish: %s ms", (fim-inicio));
-                    return 0;
-                }
-            };
-            managedExecutor.supplyAsync(publisher);
-            
-        }
+        
+        MarketDataGenerator generator = new MarketDataGenerator();
+        generator.setQuantity(size);
+        generator.setInterval(interval);
+        
+        Thread t = new Thread(generator);
+        
+        t.start();
 
-        return "{status:OK, threads: "+threads+", messagesPerThread: "+size+", totalMessagesGenerated: "+threads*size+"}";
-    }
+
+        return "{status:OK}";
+  }
 }
