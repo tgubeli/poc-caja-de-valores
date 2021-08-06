@@ -1,0 +1,201 @@
+---
+
+- hosts: localhost
+  name: "Caja de valores PoC Install"
+  connection: local
+  vars_files:
+    - vars.yaml
+
+  tasks:
+    - name: Login Openshift
+      shell: "oc login -u {{ ocp_user }} -p {{ ocp_pass }} {{ ocp_master_url }} --insecure-skip-tls-verify"
+
+    - name: Get openshift hostname
+      k8s_info:
+        kind: Route
+        name: console
+        namespace: openshift-console
+        api_version: route.openshift.io/v1
+      register: openshift_console_route
+
+    - name: Set openshift host
+      set_fact:
+        route_subdomain: "{{ openshift_console_route.resources[0].status.ingress[0].routerCanonicalHostname }}"
+
+    - name: Set openshift console
+      set_fact:
+        console_url: "https://{{ openshift_console_route.resources[0].status.ingress[0].host }}"
+
+    - name: debug values
+      debug:
+        msg:
+        - "console URL: {{ console_url }}"
+        - "route subdomain: {{ route_subdomain }}"
+
+    - name: create project caja-valores
+      k8s:
+        state: present
+        kind: Project
+        api_version: project.openshift.io/v1
+        definition:
+          metadata:
+            name: "{{ project_name }}"
+            annotations:
+              openshift.io/description: ""
+              openshift.io/display-name: "Caja de Valores PoC"
+
+    - name: Evaluate {{ operators_project }} namespace if not exists
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: '{{ operators_project }}'
+        state: present
+
+    - name: Evaluate CatalogSource for Operator Snapshot
+      k8s:
+        state: present
+        resource_definition: "{{ lookup('template', 'snapshot-catalogsource.yaml.j2') }}"
+    - name: Evaluate {{ operators_project }} namespace if not exists 
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: '{{ operators_project }}'
+        state: present
+
+    - name: Evaluate Streams Subscription
+      k8s:
+        state: present
+        resource_definition: "{{ lookup('template', 'amqstreams_subscription.yaml.j2') }}"
+
+    - name: Wait for Streams operator to install
+      k8s_info:
+        api_version: apiextensions.k8s.io/v1beta1
+        kind: CustomResourceDefinition
+        name: kafkas.kafka.strimzi.io
+      register: crd_streams
+      until: crd_streams.resources | list | length == 1
+      retries: 10
+      delay: 30
+
+    - name: Wait for Kafka CRD
+      k8s_facts:
+        api_version: apiextensions.k8s.io/v1beta1
+        kind: CustomResourceDefinition
+        name: kafkas.kafka.strimzi.io
+      register: r_kafka_crd
+      retries: 200
+      delay: 10
+      until: r_kafka_crd.resources | list | length == 1
+
+    - name: Create AMQ Streams Cluster
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'kafka.yaml.j2') }}"
+
+    - name: Create TOPIC
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'kafka-topic.yaml.j2') }}"
+
+    - name: Create FIX Acceptor Build
+      shell: "oc new-build --name fix-acceptor --binary --strategy source --image-stream java:openjdk-11-el7 -n {{ project_name }}"
+
+    - name: Start FIX Acceptor Build
+      shell: "oc start-build fix-acceptor --follow --from-file=fix-acceptor/target/fix-acceptor-1.0.0-SNAPSHOT-runner.jar -n {{ project_name }}"
+
+    - name: "Wait for following builds to become ready: fix-acceptor"
+      command: 'oc get build -o json -n "{{ project_name }}"'
+      register: build_state
+      changed_when: false
+      retries: "20"
+      delay: "20"
+      vars:
+        query: "items[?  (status.phase != 'Complete') ].metadata.annotations.\"openshift.io/build-config.name\""
+      until: "build_state.stdout |from_json |json_query(query) |intersect('fix-acceptor') |length == 0"
+
+    - name: Image lookup Fix Acceptor
+      shell: "oc set image-lookup fix-acceptor -n {{ project_name }}"
+
+    - name: Create Fix Acceptor route
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'fix-acceptor/route.yaml.j2') }}"
+
+    
+    - name: Create Fix Acceptor deployment
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'fix-acceptor/deployment.yaml.j2') }}"
+
+    - name: Create Fix Acceptor Service
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'fix-acceptor/service.yaml.j2') }}"
+
+    - name: Create FIX Iniciator Build
+      shell: "oc new-build --name fix-iniciator --binary --strategy source --image-stream java:openjdk-11-el7 -n {{ project_name }}"
+
+    - name: Start FIX Iniciator Build
+      shell: "oc start-build fix-iniciator --follow --from-file=fix-iniciator/target/fix-iniciator-1.0.0-SNAPSHOT-runner.jar -n {{ project_name }}"
+    
+    - name: "Wait for following builds to become ready: fix-iniciator"
+      command: 'oc get build -o json -n "{{ project_name }}"'
+      register: build_state
+      changed_when: false
+      retries: "20"
+      delay: "20"
+      vars:
+        query: "items[?  (status.phase != 'Complete') ].metadata.annotations.\"openshift.io/build-config.name\""
+      until: "build_state.stdout |from_json |json_query(query) |intersect('fix-iniciator') |length == 0"
+
+    - name: Image lookup Fix Iniciator
+      shell: "oc set image-lookup fix-iniciator -n {{ project_name }}"
+    
+    - name: Create Fix Iniciator ConfigMap
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'fix-iniciator/configmap.yaml.j2') }}"
+
+    - name: Create Fix Iniciator PVC
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'fix-iniciator/pvc.yaml.j2') }}"
+
+    - name: Create Fix Iniciator Deployment
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'fix-iniciator/deployment.yaml.j2') }}"
+
+    - name: Create Fix Iniciator Service
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'fix-iniciator/service.yaml.j2') }}"
+
+    - name: Create 5 dummy FIX messages 
+      uri:
+        url: "http://fix-acceptor-{{ project_name }}.{{ route_subdomain }}/generator?sizePerThread=5&threads=1"
+        method: GET
+        status_code: 200
+
+    - name: Total number of iniciators connected to the acceptor
+      uri:
+        url: "http://fix-acceptor-{{ project_name }}.{{ route_subdomain }}/sessions"
+        method: GET
+        status_code: 200
+        return_content: true
+      register: fix_sessions
+    
+    - name: debug values
+      debug:
+        msg:
+        - "SESSIONS: {{ fix_sessions.content }}"
+

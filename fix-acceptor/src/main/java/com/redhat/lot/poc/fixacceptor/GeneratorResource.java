@@ -14,9 +14,6 @@ import javax.ws.rs.core.MediaType;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logging.Logger;
 
-import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.mutiny.core.eventbus.EventBus;
-
 @Path("/generator")
 public class GeneratorResource {
 
@@ -38,7 +35,6 @@ public class GeneratorResource {
         Thread t = new Thread(generator);
         
         t.start();
-
 
         return "{status:OK}";
   }

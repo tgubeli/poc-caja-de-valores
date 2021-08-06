@@ -48,3 +48,5 @@ curl $ROUTE_NAME/generator?sizePerThread=5&threads=1
 
 # Rest enpoint to see the total number of iniciators connected to the acceptor
 curl $ROUTE_NAME/sessions
+
+

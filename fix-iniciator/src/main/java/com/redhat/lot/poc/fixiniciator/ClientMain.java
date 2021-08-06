@@ -42,47 +42,47 @@ public class ClientMain implements QuarkusApplication{
 	@Override
     public int run(String... args) {
 
-    //public static void main(String[] args) throws Exception {
+		//public static void main(String[] args) throws Exception {
         System.out.println("Running main method");
         //try (InputStream inputStream = getSettingsInputStream(args)){
             
-        	//SessionSettings settings = new SessionSettings(inputStream);
-        
-        	// Values like SenderCompID, SocketConnectHost and others are read from application.properties or Java/K8s Environment Variables
+    	//SessionSettings settings = new SessionSettings(inputStream);
+    
+    	// Values like SenderCompID, SocketConnectHost and others are read from application.properties or Java/K8s Environment Variables
+    	
+    	try {
+    		
+    		SessionSettings settings = newSessionSettings();
         	
-        	try {
-        		
-        		SessionSettings settings = newSessionSettings();
-	        	
-	        	
-	            boolean logHeartbeats = Boolean.valueOf(System.getProperty("logHeartbeats", "false"));
-	            
-	
-	            MyApplication application = new MyApplication();
-	            MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
-	            LogFactory logFactory = new ScreenLogFactory(true, true, true, logHeartbeats);
-	            MessageFactory messageFactory = new DefaultMessageFactory();
-	
-	            // QuickFix :: Socket Initiator...
-	            initiator = new SocketInitiator(application, messageStoreFactory, settings, logFactory, messageFactory);
-	            
-	            // QuickFix :: Start Socket Initiator...
-	            initiator.start();
-	            System.out.println(">>> Sessions Size: "+initiator.getSessions().size());
-	            for (SessionID sessionId : initiator.getSessions()) {
-	                Session.lookupSession(sessionId).logon();
-	            }
-	            System.out.println(">>> Logged On?? "+initiator.isLoggedOn());
-	            
-	            //Quarkus.run(args); 
-	            Quarkus.waitForExit();
-	            logout();
-	            
-        	}catch(Exception e) {
-        		e.printStackTrace();
-        	}
-        //}
-            return 0;
+        	
+            boolean logHeartbeats = Boolean.valueOf(System.getProperty("logHeartbeats", "false"));
+            
+
+            MyApplication application = new MyApplication();
+            MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
+            LogFactory logFactory = new ScreenLogFactory(true, true, true, logHeartbeats);
+            MessageFactory messageFactory = new DefaultMessageFactory();
+
+            // QuickFix :: Socket Initiator...
+            initiator = new SocketInitiator(application, messageStoreFactory, settings, logFactory, messageFactory);
+            
+            // QuickFix :: Start Socket Initiator...
+            initiator.start();
+            System.out.println(">>> Sessions Size: "+initiator.getSessions().size());
+            for (SessionID sessionId : initiator.getSessions()) {
+                Session.lookupSession(sessionId).logon();
+            }
+            System.out.println(">>> Logged On?? "+initiator.isLoggedOn());
+            
+            //Quarkus.run(args); 
+            Quarkus.waitForExit();
+            logout();
+            
+    	}catch(Exception e) {
+    		e.printStackTrace();
+    	}
+    //}
+        return 0;
         
     }
     
