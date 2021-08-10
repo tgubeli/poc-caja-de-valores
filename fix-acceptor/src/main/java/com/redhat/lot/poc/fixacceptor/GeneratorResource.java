@@ -11,7 +11,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import quickfix.Message;
+
 import org.eclipse.microprofile.context.ManagedExecutor;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
 
 @Path("/generator")
@@ -22,6 +26,9 @@ public class GeneratorResource {
 
     @Inject
     ManagedExecutor managedExecutor;
+
+    @Channel("marketdata")
+    Emitter<Message> emitter;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -38,4 +45,15 @@ public class GeneratorResource {
 
         return "{status:OK}";
   }
+
+  @GET
+  @Path("/publish-to-kafka")
+  @Produces(MediaType.TEXT_PLAIN)
+  public String publishToKafka() {
+
+			emitter.send(MarketDataGenerator.generateMessage());
+
+      return "{status:OK}";
+  }
+  
 }
