@@ -7,10 +7,20 @@ import org.jboss.logging.Logger;
 import quickfix.DoubleField;
 import quickfix.InvalidMessage;
 import quickfix.Message;
-import quickfix.UtcTimeStampField;
-import quickfix.UtcTimestampPrecision;
+
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 public class MarketDataGenerator implements Runnable {
+
+	// Using the Emitter you are sending messages from your imperative code to reactive messaging. 
+	// These messages are stored in a queue until they are sent. If the Kafka producer client can’t keep up with messages trying to be sent over to Kafka, 
+	// this queue can become a memory hog and you may even run out of memory. You can use @OnOverflow to configure back-pressure strategy. 
+	// It lets you configure the size of the queue (default is 256) and the strategy to apply when the buffer size is reached. 
+	// Available strategies are DROP, LATEST, FAIL, BUFFER, UNBOUNDED_BUFFER and NONE.
+	@Channel("marketdata")
+    Emitter<Message> emitter;
 
 	@Inject
 	Logger log;
@@ -38,9 +48,7 @@ public class MarketDataGenerator implements Runnable {
 		System.out.println("arrancando " + quantity);
 
 		while (play) {
-
 			generateMarketData();
-
 		}
 
 	}
@@ -52,16 +60,16 @@ public class MarketDataGenerator implements Runnable {
 		long tiempo_restante_loop = 0;
 		double d;
 		for (int i = 0; i <= quantity; i++) {
-			Message message = new Message();
+			Message fixMessage = new Message();
 			timestamp = System.currentTimeMillis();
 			d = timestamp.doubleValue();
-			message.setField(new DoubleField(60, d));
+			fixMessage.setField(new DoubleField(60, d));
 			try {
-				message.fromString(msg, null, false);
+				fixMessage.fromString(msg, null, false);
 			} catch (InvalidMessage e) {
 				e.printStackTrace();
 			}
-			CircularList.getInstance().insert(message);
+			CircularList.getInstance().insert(fixMessage);
 			if (System.currentTimeMillis() - time >= interval) {
 				System.out.println(
 						"**ATENCION!!** Tiempo excedido para ciclo generación de market data en el intervalo. Generado "
@@ -69,6 +77,8 @@ public class MarketDataGenerator implements Runnable {
 				break;
 			}
 
+			// PUBLISH TO KAFKA
+			// emitter.send(fixMessage);
 		}
 
 		System.out.println(("generado " + quantity));
@@ -81,7 +91,8 @@ public class MarketDataGenerator implements Runnable {
 
 	private void esperar(long tiempo_restante_loop) {
 		try {
-			Thread.currentThread().sleep(tiempo_restante_loop);
+			Thread.currentThread();
+			Thread.sleep(tiempo_restante_loop);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

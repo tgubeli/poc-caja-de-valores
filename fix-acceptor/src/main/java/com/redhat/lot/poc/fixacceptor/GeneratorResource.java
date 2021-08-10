@@ -1,11 +1,11 @@
 package com.redhat.lot.poc.fixacceptor;
 
-import java.time.LocalDateTime;
-import java.util.function.Supplier;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
