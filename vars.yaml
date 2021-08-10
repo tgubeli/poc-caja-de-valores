@@ -1,6 +1,6 @@
 ocp_user: opentlc-mgr
 ocp_pass: r3dh4t1!
-ocp_master_url: https://api.cluster-c591.c591.sandbox1342.opentlc.com:6443
+ocp_master_url: https://api.cluster-361f.361f.sandbox1011.opentlc.com:6443
 git_repo: https://github.com/tgubeli/poc-caja-de-valores
 project_name: caja-valores
 operators_project: 'openshift-marketplace'
@@ -15,5 +15,3 @@ transaction_state_log_replication.factor: 3
 transaction_state_log_min_isr: 2
 partitions: 130
 replicas: 2
-
-

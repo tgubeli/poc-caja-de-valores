@@ -32,18 +32,27 @@ public class GeneratorResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String generate(@QueryParam(value = "sizePerThread") @DefaultValue(value = "1000") Integer size, @QueryParam(value = "interval") @DefaultValue(value = "100") Integer interval) {
-        log.info(("------------starting generation------"));
+    public String generate(
+    		@QueryParam(value = "sizePerThread") @DefaultValue(value = "10") Integer size, 
+    		@QueryParam(value = "threads") @DefaultValue(value = "1") Integer threads,
+    		@QueryParam(value = "interval") @DefaultValue(value = "1000") Integer interval,
+    		@QueryParam(value = "duration") @DefaultValue(value = "10000") Integer duration
+    		) {
         
-        MarketDataGenerator generator = new MarketDataGenerator();
-        generator.setQuantity(size);
-        generator.setInterval(interval);
+    	log.info((">>> Generating: Threads["+threads+"], MessagesPerThread["+size+"], Interval["+interval+"], Duration["+duration+"]"));
         
-        Thread t = new Thread(generator);
-        
-        t.start();
+    	//for(int i=0;i<threads;i++) {
+    	
+	        MarketDataGenerator generator = new MarketDataGenerator();
+	        generator.setQuantity(size);
+	        generator.setInterval(interval);
+	        
+	        Thread t = new Thread(generator);
+	        
+	        t.start();
+    	//}
 
-        return "{status:OK}";
+        return "{'status' : 'DONE', 'threads' : '"+threads+"', 'messagesPerThread' : '"+size+"', 'interval' : '"+interval+"', 'duration: '"+duration+"'}";
   }
 
   @GET
