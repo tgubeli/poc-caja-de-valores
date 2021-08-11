@@ -1,5 +1,5 @@
 ocp_user: opentlc-mgr
-ocp_pass: r3dh4t1!
+ocp_pass: changeit
 ocp_master_url: https://api.cluster-361f.361f.sandbox1011.opentlc.com:6443
 git_repo: https://github.com/tgubeli/poc-caja-de-valores
 project_name: caja-valores
