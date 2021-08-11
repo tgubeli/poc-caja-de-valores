@@ -20,6 +20,14 @@ public class MarketDataGenerator implements Runnable {
 	private int quantity = 100;
 	private int interval = 1000;
 	private long time;
+	private int duration;
+	private long initPerSecondTime;
+	private long currenttime;
+	private long totalMessagesGenerated;
+	private int cycles;
+	
+	//end time execution, since initTime (inittime + (duration in milliseconds))
+	private long endTime;
 
 	public void setInterval(int interval) {
 		this.interval = interval;
@@ -32,11 +40,26 @@ public class MarketDataGenerator implements Runnable {
 	public void setPlay(boolean play) {
 		this.play = play;
 	}
+	
+	public MarketDataGenerator(int quantity, int interval, int duration) {
+		this.interval = interval;
+		this.quantity = quantity;
+		this.duration = duration;
+	}
+	
+	public MarketDataGenerator() {
+	}
 
 	@Override
 	public void run() {
-		System.out.println("arrancando " + quantity);
-
+		System.out.println(">>> Arrancando " + quantity);
+		
+		cycles = 0;
+		totalMessagesGenerated = 0;
+		
+		// End Time = Time until the thread will be executed
+		endTime = System.currentTimeMillis() + duration;
+		
 		while (play) {
 			generateMarketData();
 		}
@@ -44,11 +67,25 @@ public class MarketDataGenerator implements Runnable {
 	}
 
 	public void generateMarketData() {
-		System.out.println(("------------generando------"));
-		time = System.currentTimeMillis();
+		
+		cycles = cycles + 1;
+		
+		//System.out.println((">>> Ciclo: "+cycles));
+		
+		initPerSecondTime = System.currentTimeMillis();
+		
+        Long timestamp;
+		
+		
 		long tiempo_restante_loop = 0;
+		double d;
+		
+		time = System.currentTimeMillis();
+		
 		for (int i = 0; i <= quantity; i++) {
+			
 			CircularList.getInstance().insert(MarketDataGenerator.generateMessage());
+			
 			if (System.currentTimeMillis() - time >= interval) {
 				System.out.println(
 						"**ATENCION!!** Tiempo excedido para ciclo generación de market data en el intervalo. Generado "
@@ -59,11 +96,17 @@ public class MarketDataGenerator implements Runnable {
 			// emitter.send(fixMessage);
 		}
 
-		System.out.println(("generado " + quantity));
-		tiempo_restante_loop = interval - (System.currentTimeMillis() - time);
+		//System.out.println((">>> Generado " + quantity + " mensajes en "+interval+" milisegundos"));
+		
+		tiempo_restante_loop = interval - (currenttime - initPerSecondTime);
 		if (tiempo_restante_loop > 0) {
 			esperar(tiempo_restante_loop);
 		}
+		
+		totalMessagesGenerated = totalMessagesGenerated + quantity;
+		currenttime = System.currentTimeMillis();
+		if(currenttime>=endTime)
+			stop();
 
 	}
 
@@ -83,11 +126,18 @@ public class MarketDataGenerator implements Runnable {
 
 	private void esperar(long tiempo_restante_loop) {
 		try {
-			Thread.currentThread();
-			Thread.sleep(tiempo_restante_loop);
+//			Thread.currentThread();
+//			Thread.sleep(tiempo_restante_loop);
+			Thread.currentThread().sleep(tiempo_restante_loop);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public void stop() {
+		System.out.println((">>> Time is up ("+duration+" ms)! Stopping thread..."));
+		System.out.println((">>> Total Messages Generated... ("+totalMessagesGenerated+")"));
+		play = false;
 	}
 
 }
