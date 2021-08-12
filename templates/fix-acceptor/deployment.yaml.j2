@@ -30,9 +30,10 @@ spec:
               value: '-XX:MaxMetaspaceSize=2000m'
           resources:
             limits:
-              cpu: '2'
-              memory: 3Gi
+              cpu: '4'
+              memory: 4Gi
             requests:
+              cpu: '2'
               memory: 256Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
