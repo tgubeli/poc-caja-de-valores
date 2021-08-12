@@ -1,8 +1,11 @@
 package com.redhat.lot.poc.fixacceptor;
 
+import java.text.SimpleDateFormat;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
 
 import quickfix.DoubleField;
@@ -16,6 +19,8 @@ public class MarketDataGenerator implements Runnable {
 	Logger log;
 
 	private final static String msg = "8=FIX.4.49=12835=D34=449=BANZAI52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
+	private String fixDatePattern = "YYYYMMDD-HH:mm:ss.SSS";
+	private SimpleDateFormat simpleDateFormat;
 	private boolean play = true;
 	private int quantity = 100;
 	private int interval = 1000;
@@ -26,6 +31,18 @@ public class MarketDataGenerator implements Runnable {
 	private long totalMessagesGenerated;
 	private int cycles;
 	
+
+	private Emitter<Message> emitter;
+	
+	
+	public Emitter<Message> getEmitter() {
+		return emitter;
+	}
+
+	public void setEmitter(Emitter<Message> emitter) {
+		this.emitter = emitter;
+	}
+
 	//end time execution, since initTime (inittime + (duration in milliseconds))
 	private long endTime;
 
@@ -56,9 +73,12 @@ public class MarketDataGenerator implements Runnable {
 		
 		cycles = 0;
 		totalMessagesGenerated = 0;
+		currenttime = System.currentTimeMillis();
 		
 		// End Time = Time until the thread will be executed
-		endTime = System.currentTimeMillis() + duration;
+		endTime = currenttime + duration;
+		
+		simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 		
 		while (play) {
 			generateMarketData();
@@ -93,12 +113,11 @@ public class MarketDataGenerator implements Runnable {
 				break;
 			}
 
-			// emitter.send(fixMessage);
 		}
 
 		//System.out.println((">>> Generado " + quantity + " mensajes en "+interval+" milisegundos"));
 		
-		tiempo_restante_loop = interval - (currenttime - initPerSecondTime);
+		tiempo_restante_loop = interval - (initPerSecondTime - currenttime);
 		if (tiempo_restante_loop > 0) {
 			esperar(tiempo_restante_loop);
 		}
@@ -113,10 +132,10 @@ public class MarketDataGenerator implements Runnable {
 	public static Message generateMessage(){
 		Message fixMessage = new Message();
 		Long timestamp = System.currentTimeMillis();
-		fixMessage.setField(new DoubleField(60, timestamp.doubleValue()));
 
 		try {
 			fixMessage.fromString(msg, null, false);
+			fixMessage.setField(new DoubleField(60, timestamp ));
 		} catch (InvalidMessage e) {
 			e.printStackTrace();
 		}
@@ -128,6 +147,7 @@ public class MarketDataGenerator implements Runnable {
 		try {
 //			Thread.currentThread();
 //			Thread.sleep(tiempo_restante_loop);
+			
 			Thread.currentThread().sleep(tiempo_restante_loop);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -139,5 +159,6 @@ public class MarketDataGenerator implements Runnable {
 		System.out.println((">>> Total Messages Generated... ("+totalMessagesGenerated+")"));
 		play = false;
 	}
+	
 
 }

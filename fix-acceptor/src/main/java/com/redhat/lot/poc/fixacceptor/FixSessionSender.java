@@ -56,6 +56,17 @@ public class FixSessionSender implements Runnable {
 					
 					avanzar_punteros_a_lista();
 					
+					// si se han enviado MUCHOS mensajes y aun quedan por procesar, revisar si es hora de imprimir un log
+					if(totalMessages>200) {
+						// es necesario imprimir logs de resumen de metricas? (basado en un intervalo de tiempo [printLogInterval])
+						if( ( lastPrintLog + printLogInterval ) <= System.currentTimeMillis() ) {
+							lastPrintLog = System.currentTimeMillis();
+							// log metrics if there is one...
+							if(metrics[1]!=null)
+								printMetrics(); 
+						}
+					}
+					
 				} else if (ya_consumi_todos_los_mensajes_de_la_lista()) {
 					
 					// es necesario imprimir logs de resumen de metricas? (basado en un intervalo de tiempo [printLogInterval])
@@ -67,6 +78,7 @@ public class FixSessionSender implements Runnable {
 					}
 					
 					Thread.currentThread().sleep(1);
+					
 				} else {
 					System.out.println("Perdi por más de 1 vuelta!!! currentLoop=" + currentLoop + " lista "
 							+ list.getCurrentLoop());
@@ -100,7 +112,7 @@ public class FixSessionSender implements Runnable {
 			start = (Double) metrics[j][1];
 			val = end-start;
 			
-			System.out.println(">>> Metric ["+j+"] "+val);
+			//System.out.println(">>> Metric ["+j+"] "+val);
 			
 			if(durationMin<0 || durationMin>val)
 				durationMin=val;
@@ -113,7 +125,8 @@ public class FixSessionSender implements Runnable {
 		durationMedian=durationMedian>0?durationMedian/totalMessages:durationMedian;
 		
 		//print metrics
-		System.out.println(">>> Metrics Resume for SessionID ["+sessionID+"]: max["+durationMax+"], min["+durationMin+"], med["+durationMedian+"]");
+		if(durationMax>=0)
+			System.out.println(">>> Metrics Resume for SessionID ["+sessionID+"]: max["+durationMax+"], min["+durationMin+"], med["+durationMedian+"]");
 		
 		// reseting metrics 
 		metrics = new double[MAX][2];

@@ -42,7 +42,10 @@ public class Executor {
     public Executor(SessionSettings settings) throws Exception {
         OrderApplication application = new OrderApplication(settings);
         MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
-        LogFactory logFactory = new ScreenLogFactory(true, true, true);
+        
+        // LOG FIX Messages: Booleans (incoming, outgoing, events)
+        LogFactory logFactory = new ScreenLogFactory(false, false, true);
+        
         MessageFactory messageFactory = new DefaultMessageFactory();
 
         acceptor = new SocketAcceptor(application, messageStoreFactory, settings, logFactory,
