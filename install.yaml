@@ -57,6 +57,9 @@
     - name: Maven Package Fix Acceptor
       shell: "mvn package -DskipTests -f fix-acceptor/pom.xml"
 
+    - name: Maven Package Fix Acceptor Kafka
+      shell: "mvn package -DskipTests -f fix-acceptor-kafka/pom.xml"
+
     - name: Evaluate CatalogSource for Operator Snapshot
       k8s:
         state: present
