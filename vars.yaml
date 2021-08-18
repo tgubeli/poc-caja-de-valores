@@ -1,6 +1,6 @@
 ocp_user: opentlc-mgr
-ocp_pass: changeit
-ocp_master_url: https://api.cluster-361f.361f.sandbox1011.opentlc.com:6443
+ocp_pass: r3dh4t1!
+ocp_master_url: https://api.cluster-c0c2.c0c2.sandbox1708.opentlc.com:6443
 git_repo: https://github.com/tgubeli/poc-caja-de-valores
 project_name: caja-valores
 operators_project: 'openshift-marketplace'
