@@ -19,6 +19,14 @@ spec:
       labels:
         deployment: fix-acceptor
     spec:
+      volumes:
+        - name: application-config-acceptor
+          configMap:
+            name: fix-acceptor-config
+            items:
+              - key: application.properties
+                path: application.properties
+            defaultMode: 420
       containers:
         - name: fix-acceptor
           image: fix-acceptor:latest
@@ -35,6 +43,10 @@ spec:
             requests:
               cpu: '2'
               memory: 256Mi
+          volumeMounts:
+            - name: application-config-acceptor
+              readOnly: true
+              mountPath: /deployments/config
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           imagePullPolicy: IfNotPresent
