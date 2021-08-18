@@ -50,7 +50,7 @@
         kind: Namespace
         name: '{{ operators_project }}'
         state: present
-    
+
     - name: Maven Package Fix Iniciator
       shell: "mvn package -DskipTests -f fix-iniciator/pom.xml"
 
@@ -64,7 +64,7 @@
       k8s:
         state: present
         resource_definition: "{{ lookup('template', 'snapshot-catalogsource.yaml.j2') }}"
-    - name: Evaluate {{ operators_project }} namespace if not exists 
+    - name: Evaluate {{ operators_project }} namespace if not exists
       k8s:
         api_version: v1
         kind: Namespace
@@ -133,7 +133,12 @@
         namespace: '{{ project_name }}'
         resource_definition: "{{ lookup('template', 'fix-acceptor/route.yaml.j2') }}"
 
-    
+    - name: Create Fix Acceptor ConfigMap
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'fix-acceptor/configmap.yaml.j2') }}"
+
     - name: Create Fix Acceptor deployment
       k8s:
         state: present
@@ -151,7 +156,7 @@
 
     - name: Start FIX Iniciator Build
       shell: "oc start-build fix-iniciator --follow --from-file=fix-iniciator/target/fix-iniciator-1.0.0-SNAPSHOT-runner.jar -n {{ project_name }}"
-    
+
     - name: "Wait for following builds to become ready: fix-iniciator"
       command: 'oc get build -o json -n "{{ project_name }}"'
       register: build_state
@@ -164,7 +169,7 @@
 
     - name: Image lookup Fix Iniciator
       shell: "oc set image-lookup fix-iniciator -n {{ project_name }}"
-    
+
     - name: Create Fix Iniciator ConfigMap
       k8s:
         state: present
@@ -188,7 +193,7 @@
         state: present
         namespace: '{{ project_name }}'
         resource_definition: "{{ lookup('template', 'fix-iniciator/service.yaml.j2') }}"
-    
+
     - name: Create FIX Acceptor Kafka Build
       shell: "oc new-build --name fix-acceptor-kafka --binary --strategy source --image-stream java:openjdk-11-el7 -n {{ project_name }}"
 
@@ -220,7 +225,7 @@
         namespace: '{{ project_name }}'
         resource_definition: "{{ lookup('template', 'fix-acceptor-kafka/service.yaml.j2') }}"
 
-    - name: Create 5 dummy FIX messages 
+    - name: Create 5 dummy FIX messages
       uri:
         url: "http://fix-acceptor-{{ project_name }}.{{ route_subdomain }}/generator?sizePerThread=5&threads=1"
         method: GET
@@ -233,9 +238,8 @@
         status_code: 200
         return_content: true
       register: fix_sessions
-    
+
     - name: debug values
       debug:
         msg:
         - "SESSIONS: {{ fix_sessions.content }}"
-
