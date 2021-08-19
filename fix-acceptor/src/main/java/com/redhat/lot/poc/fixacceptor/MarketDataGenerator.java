@@ -26,6 +26,7 @@ public class MarketDataGenerator implements Runnable {
 	private int interval = 1000;
 	private long time;
 	private int duration;
+	private int chunks=1;
 	private long initPerSecondTime;
 	private long currenttime;
 	private long totalMessagesGenerated;
@@ -92,7 +93,7 @@ public class MarketDataGenerator implements Runnable {
 		
 		//System.out.println((">>> Ciclo: "+cycles));
 		
-		initPerSecondTime = System.currentTimeMillis();
+		initPerSecondTime = System.nanoTime();
 		
         Long timestamp;
 		
@@ -100,13 +101,14 @@ public class MarketDataGenerator implements Runnable {
 		long tiempo_restante_loop = 0;
 		double d;
 		
-		time = System.currentTimeMillis();
+		time = System.nanoTime();
+
 		
-		for (int i = 0; i <= quantity; i++) {
+		for (int i = 0; i <= (quantity/chunks); i++) {
 			
 			CircularList.getInstance().insert(MarketDataGenerator.generateMessage());
 			
-			if (System.currentTimeMillis() - time >= interval) {
+			if (System.currentTimeMillis() - time >= (interval/chunks)) {
 				System.out.println(
 						"**ATENCION!!** Tiempo excedido para ciclo generación de market data en el intervalo. Generado "
 								+ quantity);
@@ -117,6 +119,7 @@ public class MarketDataGenerator implements Runnable {
 
 		//System.out.println((">>> Generado " + quantity + " mensajes en "+interval+" milisegundos"));
 		
+		//TODO ver como calcular esto con nanosegundos
 		tiempo_restante_loop = interval - (initPerSecondTime - currenttime);
 		if (tiempo_restante_loop > 0) {
 			esperar(tiempo_restante_loop);
@@ -144,11 +147,18 @@ public class MarketDataGenerator implements Runnable {
 	}
 
 	private void esperar(long tiempo_restante_loop) {
+		int nanos = 0;
+		long tiempo_restante_loop_milis = 0;
 		try {
 //			Thread.currentThread();
 //			Thread.sleep(tiempo_restante_loop);
+			if (tiempo_restante_loop > 999) {
+				tiempo_restante_loop_milis = tiempo_restante_loop /1000;
+				
+			}
+			nanos = (int) tiempo_restante_loop % 1000;
 			
-			Thread.currentThread().sleep(tiempo_restante_loop);
+			Thread.currentThread().sleep(tiempo_restante_loop_milis, nanos);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
