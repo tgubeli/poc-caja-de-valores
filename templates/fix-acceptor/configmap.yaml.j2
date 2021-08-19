@@ -1,0 +1,21 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: fix-acceptor-config
+  managedFields:
+    - manager: kubectl-create
+      operation: Update
+      apiVersion: v1
+data:
+  application.properties: |-
+
+    quarkus.banner.enabled=false
+    quarkus.test.continuous-testing=disabled
+    quarkus.swagger-ui.always-include=true
+    quarkus.package.type=uber-jar
+
+    #kafka
+    %prod.kafka.bootstrap.servers=cv-kafka-kafka-bootstrap:9092
+    mp.messaging.outgoing.marketdata.connector=smallrye-kafka
+    mp.messaging.outgoing.marketdata.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
+    mp.messaging.outgoing.marketdata.merge=true
