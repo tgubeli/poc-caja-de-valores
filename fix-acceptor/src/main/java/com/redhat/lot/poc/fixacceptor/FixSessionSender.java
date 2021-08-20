@@ -43,8 +43,8 @@ public class FixSessionSender implements Runnable {
 				if (estoy_sincronizado_con_la_lista_circular()) 	{
 					Message msg = list.get(currentIndex);
 					
-					metrics[totalMessages][0] = System.currentTimeMillis();
-					metrics[totalMessages][1] = msg.getDouble(60);
+//					metrics[totalMessages][0] = System.currentTimeMillis();
+//					metrics[totalMessages][1] = msg.getDouble(60);
 					
 					//timestamp = System.currentTimeMillis();
 					//d = timestamp.doubleValue() - msg.getDouble(60);
@@ -52,30 +52,33 @@ public class FixSessionSender implements Runnable {
 
 					Session.sendToTarget(msg, sessionID);
 					
+					// add this message metrics
+					Metrics.getInstance().addMetric(sessionID.toString(), msg.getDouble(60), System.currentTimeMillis());
+					
 					totalMessages=totalMessages+1;
 					
 					avanzar_punteros_a_lista();
 					
 					// si se han enviado MUCHOS mensajes y aun quedan por procesar, revisar si es hora de imprimir un log
-					if(totalMessages>200) {
+//					if(totalMessages>200) {
 						// es necesario imprimir logs de resumen de metricas? (basado en un intervalo de tiempo [printLogInterval])
-						if( ( lastPrintLog + printLogInterval ) <= System.currentTimeMillis() ) {
-							lastPrintLog = System.currentTimeMillis();
-							// log metrics if there is one...
-							if(metrics[1]!=null)
-								printMetrics(); 
-						}
-					}
+//						if( ( lastPrintLog + printLogInterval ) <= System.currentTimeMillis() ) {
+//							lastPrintLog = System.currentTimeMillis();
+//							// log metrics if there is one...
+//							if(metrics[1]!=null)
+//								printMetrics(); 
+//						}
+//					}
 					
 				} else if (ya_consumi_todos_los_mensajes_de_la_lista()) {
 					
 					// es necesario imprimir logs de resumen de metricas? (basado en un intervalo de tiempo [printLogInterval])
-					if( ( lastPrintLog + printLogInterval ) <= System.currentTimeMillis() ) {
-						lastPrintLog = System.currentTimeMillis();
-						// log metrics if there is one...
-						if(metrics[1]!=null)
-							printMetrics(); 
-					}
+//					if( ( lastPrintLog + printLogInterval ) <= System.currentTimeMillis() ) {
+//						lastPrintLog = System.currentTimeMillis();
+//						// log metrics if there is one...
+//						if(metrics[1]!=null)
+//							printMetrics(); 
+//					}
 					
 					Thread.currentThread().sleep(1);
 					
@@ -93,45 +96,45 @@ public class FixSessionSender implements Runnable {
 
 	}
 	
-	private void printMetrics() {
-		
-		// System.out.println(">>> Printing Metrics ...");
-		
-		durationMin=-1;
-		durationMax=-1;
-		durationMedian=-1;
-		
-		double end;
-		double start;
-		String[] values;
-		double val;
-		
-		for(int j=1; j<=metrics.length && metrics[j][0]!=0.0d;j++) {
-			
-			end = (Double) metrics[j][0];
-			start = (Double) metrics[j][1];
-			val = end-start;
-			
-			//System.out.println(">>> Metric ["+j+"] "+val);
-			
-			if(durationMin<0 || durationMin>val)
-				durationMin=val;
-			else if(durationMin<0 || durationMax<val)
-				durationMax=val;
-			
-			durationMedian=durationMedian+val;
-		}
-		
-		durationMedian=durationMedian>0?durationMedian/totalMessages:durationMedian;
-		
-		//print metrics
-		if(durationMax>=0)
-			System.out.println(">>> Metrics Resume for SessionID ["+sessionID+"]: max["+durationMax+"], min["+durationMin+"], med["+durationMedian+"]");
-		
-		// reseting metrics 
-		metrics = new double[MAX][2];
-		totalMessages = 0;
-	}
+//	private void printMetrics() {
+//		
+//		// System.out.println(">>> Printing Metrics ...");
+//		
+//		durationMin=-1;
+//		durationMax=-1;
+//		durationMedian=-1;
+//		
+//		double end;
+//		double start;
+//		String[] values;
+//		double val;
+//		
+//		for(int j=1; j<=metrics.length && metrics[j][0]!=0.0d;j++) {
+//			
+//			end = (Double) metrics[j][0];
+//			start = (Double) metrics[j][1];
+//			val = end-start;
+//			
+//			//System.out.println(">>> Metric ["+j+"] "+val);
+//			
+//			if(durationMin<0 || durationMin>val)
+//				durationMin=val;
+//			else if(durationMin<0 || durationMax<val)
+//				durationMax=val;
+//			
+//			durationMedian=durationMedian+val;
+//		}
+//		
+//		durationMedian=durationMedian>0?durationMedian/totalMessages:durationMedian;
+//		
+//		//print metrics
+//		if(durationMax>=0)
+//			System.out.println(">>> Metrics Resume for SessionID ["+sessionID+"]: max["+durationMax+"], min["+durationMin+"], med["+durationMedian+"]");
+//		
+//		// reseting metrics 
+//		metrics = new double[MAX][2];
+//		totalMessages = 0;
+//	}
 
 	private boolean ya_consumi_todos_los_mensajes_de_la_lista() {
 		return (currentLoop == list.getCurrentLoop()) && (currentIndex == list.getIndex());
