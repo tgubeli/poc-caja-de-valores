@@ -1,1 +1,0 @@
-./mvnw compile quarkus:dev
