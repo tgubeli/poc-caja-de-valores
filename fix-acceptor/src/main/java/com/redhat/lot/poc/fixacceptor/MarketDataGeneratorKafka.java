@@ -3,6 +3,7 @@ package com.redhat.lot.poc.fixacceptor;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
 
@@ -34,14 +35,14 @@ public class MarketDataGeneratorKafka implements Runnable{
 	private double[][] metrics;// (used just for kafka logs)
 	public static final int MAX = 250000;// (used just for kafka logs)
 	private Integer totalMessages;// (used just for kafka logs)
-	private Emitter<Message> emitter;
+	private Emitter<String> emitter;
 	
 	
-	public Emitter<Message> getEmitter() {
+	public Emitter<String> getEmitter() {
 		return emitter;
 	}
 
-	public void setEmitter(Emitter<Message> emitter) {
+	public void setEmitter(Emitter<String> emitter) {
 		this.emitter = emitter;
 	}
 
@@ -121,7 +122,7 @@ public class MarketDataGeneratorKafka implements Runnable{
 
 		}
 		
-//		printKafkaLogs();
+		printKafkaLogs();
 		
 		tiempo_restante_loop = interval - (initPerSecondTime - currenttime);
 		if (tiempo_restante_loop > 0) {
@@ -173,11 +174,10 @@ public class MarketDataGeneratorKafka implements Runnable{
 	
 	private void sentToKafka() {
 		try {
-			
 			Message message = generateMessage();
 			
 			// send message to kafka broker...
-			emitter.send(message);
+			emitter.send(message.toString());
 			
 			metrics[totalMessages][0] = System.currentTimeMillis();
 			metrics[totalMessages][1] = message.getDouble(60);

@@ -85,7 +85,7 @@ public class OrderApplication implements quickfix.Application {
     @Override
 	public void fromApp(quickfix.Message message, SessionID sessionID) throws FieldNotFound, IncorrectDataFormat,
             IncorrectTagValue, UnsupportedMessageType {
-        // System.out.println(message.toRawString());
+        
     }
 
 }

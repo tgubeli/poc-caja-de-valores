@@ -25,10 +25,10 @@ public class GeneratorResource {
     @Inject
     ManagedExecutor managedExecutor;
 
-    @Channel("marketdata")
     //TODO Cambiar este parametro estatico a un properties o algo asi
+    @Channel("marketdata")
     @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 10000)
-    Emitter<Message> emitter;
+    Emitter<String> emitter;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -55,6 +55,7 @@ public class GeneratorResource {
     	}else {
     		
     		MarketDataGeneratorKafka generator = new MarketDataGeneratorKafka(size,interval,duration,isKafka);
+			
     		generator.setEmitter(emitter);
     		
     		Thread t = new Thread(generator);
@@ -67,15 +68,14 @@ public class GeneratorResource {
         return "{'status' : 'DONE', 'threads' : '"+threads+"', 'messagesPerThread' : '"+size+"', 'interval' : '"+interval+"', 'duration: '"+duration+"', 'toKafka' : '"+isKafka.toString()+"'}";
   }
 
-//  @GET
-//  @Path("/kafka")
-//  @Produces(MediaType.TEXT_PLAIN)
-//  public String publishToKafka() {
-//	  
-//
-//	    emitter.send(MarketDataGenerator.generateMessage());
-//
-//      return "{status:OK}";
-//  }
+	@GET
+	@Path("/kafka")
+	@Produces(MediaType.TEXT_PLAIN)
+	public String publishToKafka() {
+		emitter.send(MarketDataGenerator.generateMessage());
+
+		return "{status:OK}";
+	}
   
 }
+

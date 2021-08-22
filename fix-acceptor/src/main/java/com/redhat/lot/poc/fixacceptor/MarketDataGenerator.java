@@ -33,14 +33,14 @@ public class MarketDataGenerator implements Runnable {
 	private int cycles;
 	
 
-	private Emitter<Message> emitter;
+	private Emitter<String> emitter;
 	
 	
-	public Emitter<Message> getEmitter() {
+	public Emitter<String> getEmitter() {
 		return emitter;
 	}
 
-	public void setEmitter(Emitter<Message> emitter) {
+	public void setEmitter(Emitter<String> emitter) {
 		this.emitter = emitter;
 	}
 
