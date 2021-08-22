@@ -1,18 +1,21 @@
 package com.redhat.lot.poc.fixacceptor;
 
 import javax.enterprise.context.ApplicationScoped;
-import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import quickfix.Message;
+import java.util.logging.Logger;
 
 @ApplicationScoped
 public class FixMessageProcessor {
 
-    @Incoming("marketdata")
-    public void process(Message message) throws InterruptedException {
+    private Logger LOGGER = Logger.getLogger(FixMessageProcessor.class.getName());
 
-        System.out.println("Message read: "+message.toString());
+
+    @Incoming("marketdata")
+    public void process(String message) throws InterruptedException {
+
+        LOGGER.info("Fix Message received: "+message.toString());
+
     }
 }
