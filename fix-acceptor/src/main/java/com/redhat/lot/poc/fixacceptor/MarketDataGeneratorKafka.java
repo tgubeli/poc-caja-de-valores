@@ -177,6 +177,7 @@ public class MarketDataGeneratorKafka implements Runnable{
 			Message message = generateMessage();
 			
 			// send message to kafka broker...
+			System.out.println("Message: "+message.toString());
 			emitter.send(message.toString());
 			
 			metrics[totalMessages][0] = System.currentTimeMillis();
