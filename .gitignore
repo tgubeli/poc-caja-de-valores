@@ -141,3 +141,8 @@ Temporary Items
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/osx,java,eclipse,visualstudiocode
+.vscode/settings.json
+fix-acceptor-kafka/.classpath
+fix-acceptor-kafka/.project
+fix-acceptor-kafka/.project
+fix-acceptor-kafka/.classpath
