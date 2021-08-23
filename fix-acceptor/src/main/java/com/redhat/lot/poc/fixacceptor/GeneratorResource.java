@@ -14,8 +14,6 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 
-import quickfix.Message;
-
 @Path("/generator")
 public class GeneratorResource {
 
@@ -45,7 +43,6 @@ public class GeneratorResource {
         
     	//for(int i=0;i<threads;i++) {
     	if(!isKafka) {
-    		
     		MarketDataGenerator generator = MarketDataGenerator.getInstance();
 	        generator.setQuantity(size);
 	        generator.setInterval(interval);
@@ -57,41 +54,32 @@ public class GeneratorResource {
 	        
 	        t.start();
     	}else {
-    		
     		MarketDataGeneratorKafka generator = new MarketDataGeneratorKafka(size,interval,duration,isKafka);
-			
     		generator.setEmitter(emitter);
     		
     		Thread t = new Thread(generator);
  	        t.start();
-
     	}
-    		
-    	
 
         return "{'status' : 'STARTED', 'threads' : '"+threads+"', 'messagesPerThread' : '"+size+"', 'interval' : '"+interval+"', 'duration: '"+duration+"','chunks: '"+chunks+"', 'toKafka' : '"+isKafka.toString()+"'}";
-      }
+	}
 
-<<<<<<< HEAD
 	@GET
 	@Path("/kafka")
 	@Produces(MediaType.TEXT_PLAIN)
 	public String publishToKafka() {
-		emitter.send(MarketDataGenerator.generateMessage());
+		emitter.send(MarketDataGenerator.generateMessage().toString());
 
 		return "{status:OK}";
 	}
-=======
-	  @GET
-	  @Path("/stop")
-	  @Produces(MediaType.APPLICATION_JSON)
-	  public String stop() {
-		  
-		  MarketDataGenerator.getInstance().stop();
-		  return "{'status' : 'STOPED'}";
-		  
-	  }
->>>>>>> 562f1488c537419c1d9a237a8b9bd1b6ee98f452
+
+	@GET
+	@Path("/stop")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String stop() {
+		MarketDataGenerator.getInstance().stop();
+		return "{'status' : 'STOPED'}";
+	}
   
 }
 
