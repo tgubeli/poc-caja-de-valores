@@ -1,4 +1,4 @@
-package com.redhat.lot.poc.fixacceptor;
+package com.redhat.lot.poc;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

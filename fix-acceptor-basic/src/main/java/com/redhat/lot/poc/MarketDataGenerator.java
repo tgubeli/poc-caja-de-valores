@@ -1,24 +1,19 @@
-package com.redhat.lot.poc.fixacceptor;
+package com.redhat.lot.poc;
 
 import java.text.SimpleDateFormat;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.jboss.logging.Logger;
+import java.time.ZoneOffset;
+import java.util.Date;
 
 import quickfix.DoubleField;
 import quickfix.InvalidMessage;
 import quickfix.Message;
+import quickfix.UtcTimeStampField;
+import quickfix.field.TransactTime;
 
-@ApplicationScoped
 public class MarketDataGenerator implements Runnable {
 
-	@Inject
-	Logger log;
 
-	private final static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
+	private final static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
 	private String fixDatePattern = "YYYYMMDD-HH:mm:ss.SSS";
 	private SimpleDateFormat simpleDateFormat;
 	private boolean play = true;
@@ -34,17 +29,6 @@ public class MarketDataGenerator implements Runnable {
 	
 	private static MarketDataGenerator instance;
 	
-
-	private Emitter<String> emitter;
-	
-	
-	public Emitter<String> getEmitter() {
-		return emitter;
-	}
-
-	public void setEmitter(Emitter<String> emitter) {
-		this.emitter = emitter;
-	}
 
 	//end time execution, since initTime (inittime + (duration in milliseconds))
 	private long endTime;
@@ -121,15 +105,9 @@ public class MarketDataGenerator implements Runnable {
 		
 		cycles = cycles + 1;
 		
-		//System.out.println((">>> Ciclo: "+cycles));
-		
 		initPerSecondTime = System.nanoTime();
 		
-        Long timestamp;
-		
-		
 		long tiempo_restante_loop = 0;
-		double d;
 		
 		time = System.nanoTime();
 
@@ -142,14 +120,11 @@ public class MarketDataGenerator implements Runnable {
 				System.out.println(
 						"**ATENCION!!** Tiempo excedido para ciclo generación de market data en el intervalo. Generado "
 								+ i + " en "+(System.nanoTime() - time)+" ns");
-				//System.out.println("\t >>> System.nanoTime() - time >= (interval/chunks*1000000)");
-				//System.out.println("\t >>> ("+System.nanoTime()+" - "+time +") >= ("+ interval +"/"+chunks+"*"+1000000+")");
 				break;
 			}
 
 		}
 
-		
 		//TODO ver como calcular esto con nanosegundos
 		tiempo_restante_loop = (interval/chunks*1000000) - (initPerSecondTime - currenttime);
 		if (tiempo_restante_loop > 0) {
@@ -172,7 +147,10 @@ public class MarketDataGenerator implements Runnable {
 
 		try {
 			fixMessage.fromString(msg, null, false);
-			fixMessage.setField(new DoubleField(60, System.currentTimeMillis() ));
+			//fixMessage.setField(new DoubleField(60, System.currentTimeMillis() ));
+			
+			fixMessage.setField(new TransactTime( java.time.LocalDateTime.now() ));
+			
 		} catch (InvalidMessage e) {
 			e.printStackTrace();
 		}
@@ -184,15 +162,12 @@ public class MarketDataGenerator implements Runnable {
 		int nanos = 0;
 		long tiempo_restante_loop_milis = 0;
 		try {
-//			Thread.currentThread();
-//			Thread.sleep(tiempo_restante_loop);
 			if (tiempo_restante_loop > 999999) {
 				tiempo_restante_loop_milis = tiempo_restante_loop /1000000;
 				
 			}
 			nanos = (int) tiempo_restante_loop % 1000000;
 			
-			//System.out.println(">>> Esperando "+tiempo_restante_loop_milis+" ms, "+nanos+" ns");
 			
 			Thread.currentThread().sleep(tiempo_restante_loop_milis, nanos);
 			

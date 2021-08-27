@@ -18,6 +18,7 @@ import quickfix.Dictionary;
 import quickfix.FileStoreFactory;
 import quickfix.Initiator;
 import quickfix.LogFactory;
+import quickfix.MemoryStoreFactory;
 import quickfix.MessageFactory;
 import quickfix.MessageStoreFactory;
 import quickfix.ScreenLogFactory;
@@ -25,6 +26,7 @@ import quickfix.Session;
 import quickfix.SessionID;
 import quickfix.SessionSettings;
 import quickfix.SocketInitiator;
+import quickfix.ThreadedSocketInitiator;
 import quickfix.field.BeginString;
 import quickfix.field.SenderCompID;
 import quickfix.field.TargetCompID;
@@ -59,12 +61,13 @@ public class ClientMain implements QuarkusApplication{
             
 
             MyApplication application = new MyApplication();
-            MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
+            //MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
+            MessageStoreFactory messageStoreFactory = new MemoryStoreFactory();
             LogFactory logFactory = new ScreenLogFactory(true, true, true, logHeartbeats);
             MessageFactory messageFactory = new DefaultMessageFactory();
 
             // QuickFix :: Socket Initiator...
-            initiator = new SocketInitiator(application, messageStoreFactory, settings, logFactory, messageFactory);
+            initiator = new ThreadedSocketInitiator(application, messageStoreFactory, settings, logFactory, messageFactory);
             
             // QuickFix :: Start Socket Initiator...
             initiator.start();

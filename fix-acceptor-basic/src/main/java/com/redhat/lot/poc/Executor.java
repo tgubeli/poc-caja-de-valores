@@ -1,11 +1,10 @@
-package com.redhat.lot.poc.fixacceptor;
+package com.redhat.lot.poc;
+
 
 import static quickfix.Acceptor.SETTING_ACCEPTOR_TEMPLATE;
 import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_ADDRESS;
 import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_PORT;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -14,9 +13,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import quickfix.ConfigError;
 import quickfix.DefaultMessageFactory;
@@ -36,13 +32,16 @@ import quickfix.mina.acceptor.DynamicAcceptorSessionProvider;
 import quickfix.mina.acceptor.DynamicAcceptorSessionProvider.TemplateMapping;
 
 public class Executor {
-    private final static Logger log = LoggerFactory.getLogger(Executor.class);
-    private final ThreadedSocketAcceptor acceptor;
+    //private final static Logger log = LoggerFactory.getLogger(Executor.class);
+    
+	private final ThreadedSocketAcceptor acceptor;
     private final Map<InetSocketAddress, List<TemplateMapping>> dynamicSessionMappings = new HashMap<>();
 
 
     public Executor(SessionSettings settings) throws Exception {
-        OrderApplication application = new OrderApplication(settings);
+        
+    	OrderApplication application = new OrderApplication(settings);
+        
         //MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
         MessageStoreFactory messageStoreFactory = new MemoryStoreFactory();
         
@@ -106,7 +105,7 @@ public class Executor {
     }
 
     public void start() throws RuntimeError, ConfigError {
-    	System.out.println("Executor.start()");
+    	System.out.println("Acceptor started");
         acceptor.start();
     }
 
@@ -128,7 +127,8 @@ public class Executor {
 //
 //            executor.stop();
 //        } catch (Exception e) {
-//            log.error(e.getMessage(), e);
+//        	e.printStackTrace();
+//            //log.error(e.getMessage(), e);
 //        }
 //    }
 
