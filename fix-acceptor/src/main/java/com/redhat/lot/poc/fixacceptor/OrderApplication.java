@@ -1,6 +1,7 @@
 package com.redhat.lot.poc.fixacceptor;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import org.jboss.logging.Logger;
@@ -27,7 +28,18 @@ public class OrderApplication implements quickfix.Application {
 
     private final HashSet<String> validOrderTypes = new HashSet<>();
     
-    FixSessionSender sender;
+    private static HashMap<String, FixSessionSender> hashFixSessionSender = new HashMap<>();
+    
+    //FixSessionSender sender;
+    
+    public static HashMap<String, FixSessionSender> getHashFixSessionSender() {
+		return hashFixSessionSender;
+	}
+
+
+	public static void setHashFixSessionSender(HashMap<String, FixSessionSender> hashFixSessionSender) {
+		OrderApplication.hashFixSessionSender = hashFixSessionSender;
+	}
 
     public OrderApplication(SessionSettings settings) throws ConfigError, FieldConvertError {
         initializeValidOrderTypes(settings);
@@ -55,7 +67,9 @@ public class OrderApplication implements quickfix.Application {
     	
       ;
       LOG.infof("logon");
-    	sender = new FixSessionSender(sessionID);
+      
+      	FixSessionSender sender = new FixSessionSender(sessionID);
+    	hashFixSessionSender.put(sessionID.toString(), sender);
     	Thread thread = new Thread(sender);
     	thread.start();   	
 
