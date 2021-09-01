@@ -13,9 +13,11 @@ import quickfix.field.TransactTime;
 public class MarketDataGenerator implements Runnable {
 
 
-	private final static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
-	private String fixDatePattern = "YYYYMMDD-HH:mm:ss.SSS";
-	private SimpleDateFormat simpleDateFormat;
+	//private final static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
+	private static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=changedate10=015";
+	
+	private String fixDatePattern = "YYYYMMdd-HH:mm:ss.SSS";
+	private static SimpleDateFormat simpleDateFormat;
 	private boolean play = true;
 	private int quantity = 100;
 	private int interval = 1000;
@@ -70,6 +72,9 @@ public class MarketDataGenerator implements Runnable {
 		this.quantity = quantity;
 		this.duration = duration;
 		this.chunks = chunks;
+		
+		this.simpleDateFormat = new SimpleDateFormat(fixDatePattern);
+		
 	}
 	
 	public static MarketDataGenerator getInstance() {
@@ -114,7 +119,7 @@ public class MarketDataGenerator implements Runnable {
 		int i = 1;
 		for (i = 1; i <= (quantity/chunks); i++) {
 			
-			CircularList.getInstance().insert(MarketDataGenerator.generateMessage());
+			CircularList.getInstance().insert(MarketDataGenerator.generateStringMessage());
 			
 			if (System.nanoTime() - time >= (interval/chunks*1000000)) {
 				System.out.println(
@@ -158,6 +163,20 @@ public class MarketDataGenerator implements Runnable {
 		return fixMessage;
 	}
 
+	public static String generateStringMessage(){
+		String strFixMessage = msg;//"8=FIX.4.49=12835=D34=449=STUN52=20210901-00:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=0";
+
+		try {
+			
+			strFixMessage = strFixMessage.replace("changedate", simpleDateFormat.format(new Date()));
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return strFixMessage;
+	}
+	
 	private void esperar(long tiempo_restante_loop) {
 		int nanos = 0;
 		long tiempo_restante_loop_milis = 0;

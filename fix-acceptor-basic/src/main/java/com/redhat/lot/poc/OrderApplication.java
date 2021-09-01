@@ -91,6 +91,7 @@ public class OrderApplication implements quickfix.Application {
 	      	FixSessionSender sender = new FixSessionSender(sessionID);
 	      	hashFixSessionSender.put(sessionID.toString(), sender);
 	    	Thread thread = new Thread(null,sender,"FixSessionSender-for-"+sessionID.toString());
+	    	//thread.setPriority(9);
 	    	thread.start();   	
 	
 	    	System.out.println("OrderApplication.onLogon() "+sessionID);

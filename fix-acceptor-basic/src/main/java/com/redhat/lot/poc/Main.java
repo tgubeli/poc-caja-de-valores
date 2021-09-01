@@ -62,7 +62,7 @@ public class Main {
 				
 			}
 		};
-		timer.schedule(task,1,30000); // cada 30 segundos se crean nuevos mensajes
+		timer.schedule(task,10000,30000); // cada 30 segundos se crean nuevos mensajes
 
 		//timer.cancel();//stop the timer
 		

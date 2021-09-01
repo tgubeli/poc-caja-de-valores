@@ -1,6 +1,7 @@
 package com.redhat.lot.poc;
 
 import quickfix.FieldNotFound;
+import quickfix.InvalidMessage;
 import quickfix.Message;
 import quickfix.Session;
 import quickfix.SessionID;
@@ -34,16 +35,20 @@ public class FixSessionSender implements Runnable {
 
 				if (estoy_sincronizado_con_la_lista_circular()) 	{
 					
-					Message msg = list.get(currentIndex);
+					//Message msg = list.get(currentIndex);
+					String msg = list.getStr(currentIndex);
 					
+					fixMessage = new Message();
+					fixMessage.fromString(msg, null, false);
 					
 					// add this message metrics
-					Metrics.getInstance().addMetric(sessionID.toString(), msg.getUtcTimeStamp(60), java.time.LocalDateTime.now());
+					Metrics.getInstance().addMetric(sessionID.toString(), fixMessage.getUtcTimeStamp(60), java.time.LocalDateTime.now());
 
 					// es necesario clonar dado a que los mensajes en la lista son instancias que deben ser 
 					// modificadas para ser enviadas con valores propios de cada initiator (TargetCompID)
-					fixMessage = (Message) msg.clone();
+					//fixMessage = (Message) msg.clone();
 					fixMessage.getHeader().setField(stringField);
+					//System.out.println("Sender CID: "+sessionID.getSenderCompID()+", Target CID: "+sessionID.getTargetCompID());
 					
 					Session.sendToTarget(fixMessage, sessionID);
 					
@@ -60,7 +65,7 @@ public class FixSessionSender implements Runnable {
 							+ list.getCurrentLoop());
 					break;
 				}
-			} catch (SessionNotFound | InterruptedException | FieldNotFound e ) {
+			} catch (SessionNotFound | InterruptedException | FieldNotFound | InvalidMessage e ) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
