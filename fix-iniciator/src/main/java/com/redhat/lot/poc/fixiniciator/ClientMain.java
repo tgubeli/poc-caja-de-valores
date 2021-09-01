@@ -5,12 +5,14 @@ import java.net.UnknownHostException;
 import java.util.Iterator;
 import java.util.logging.Logger;
 
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
+import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import quickfix.ConfigError;
 import quickfix.DefaultMessageFactory;
@@ -56,10 +58,8 @@ public class ClientMain implements QuarkusApplication{
     		
     		SessionSettings settings = newSessionSettings();
         	
-        	
             boolean logHeartbeats = Boolean.valueOf(System.getProperty("logHeartbeats", "false"));
             
-
             MyApplication application = new MyApplication();
             //MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
             MessageStoreFactory messageStoreFactory = new MemoryStoreFactory();
@@ -87,6 +87,11 @@ public class ClientMain implements QuarkusApplication{
     //}
         return 0;
         
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {        
+        System.out.println("----> On Stop triggered!");
+        logout();
     }
     
     public static void logout() {
