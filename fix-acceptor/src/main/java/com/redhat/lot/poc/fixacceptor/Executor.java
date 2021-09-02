@@ -36,14 +36,17 @@ import quickfix.mina.acceptor.DynamicAcceptorSessionProvider;
 import quickfix.mina.acceptor.DynamicAcceptorSessionProvider.TemplateMapping;
 
 public class Executor {
-    private final static Logger log = LoggerFactory.getLogger(Executor.class);
-    private final ThreadedSocketAcceptor acceptor;
+    //private final static Logger log = LoggerFactory.getLogger(Executor.class);
+   
+	private final ThreadedSocketAcceptor acceptor;
     private final Map<InetSocketAddress, List<TemplateMapping>> dynamicSessionMappings = new HashMap<>();
 
 
     public Executor(SessionSettings settings) throws Exception {
-        OrderApplication application = new OrderApplication(settings);
-        //MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
+        
+    	OrderApplication application = new OrderApplication(settings);
+       
+    	//MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
         MessageStoreFactory messageStoreFactory = new MemoryStoreFactory();
         
         // LOG FIX Messages: Booleans (incoming, outgoing, events)

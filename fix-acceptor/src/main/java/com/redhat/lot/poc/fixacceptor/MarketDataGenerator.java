@@ -1,6 +1,7 @@
 package com.redhat.lot.poc.fixacceptor;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -11,6 +12,7 @@ import org.jboss.logging.Logger;
 import quickfix.DoubleField;
 import quickfix.InvalidMessage;
 import quickfix.Message;
+import quickfix.field.TransactTime;
 
 @ApplicationScoped
 public class MarketDataGenerator implements Runnable {
@@ -18,9 +20,10 @@ public class MarketDataGenerator implements Runnable {
 	@Inject
 	Logger log;
 
-	private final static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
+	//private final static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
+	private static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=changedate10=015";
 	private String fixDatePattern = "YYYYMMDD-HH:mm:ss.SSS";
-	private SimpleDateFormat simpleDateFormat;
+	private static SimpleDateFormat simpleDateFormat;
 	private boolean play = true;
 	private int quantity = 100;
 	private int interval = 1000;
@@ -86,6 +89,8 @@ public class MarketDataGenerator implements Runnable {
 		this.quantity = quantity;
 		this.duration = duration;
 		this.chunks = chunks;
+		
+		this.simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 	}
 	
 	public static MarketDataGenerator getInstance() {
@@ -121,16 +126,10 @@ public class MarketDataGenerator implements Runnable {
 		
 		cycles = cycles + 1;
 		
-		//System.out.println((">>> Ciclo: "+cycles));
-		
 		initPerSecondTime = System.nanoTime();
 		
-        Long timestamp;
-		
-		
 		long tiempo_restante_loop = 0;
-		double d;
-		
+
 		time = System.nanoTime();
 
 		int i = 1;
@@ -142,8 +141,6 @@ public class MarketDataGenerator implements Runnable {
 				System.out.println(
 						"**ATENCION!!** Tiempo excedido para ciclo generación de market data en el intervalo. Generado "
 								+ i + " en "+(System.nanoTime() - time)+" ns");
-				//System.out.println("\t >>> System.nanoTime() - time >= (interval/chunks*1000000)");
-				//System.out.println("\t >>> ("+System.nanoTime()+" - "+time +") >= ("+ interval +"/"+chunks+"*"+1000000+")");
 				break;
 			}
 
@@ -172,27 +169,41 @@ public class MarketDataGenerator implements Runnable {
 
 		try {
 			fixMessage.fromString(msg, null, false);
-			fixMessage.setField(new DoubleField(60, System.currentTimeMillis() ));
+			//fixMessage.setField(new DoubleField(60, System.currentTimeMillis() ));
+			
+			fixMessage.setField(new TransactTime( java.time.LocalDateTime.now() ));
+			
 		} catch (InvalidMessage e) {
 			e.printStackTrace();
 		}
 
 		return fixMessage;
 	}
+	
+	public static String generateStringMessage(){
+		String strFixMessage = msg;//"8=FIX.4.49=12835=D34=449=STUN52=20210901-00:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=0";
+
+		try {
+			
+			strFixMessage = strFixMessage.replace("changedate", simpleDateFormat.format(new Date()));
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return strFixMessage;
+	}
 
 	private void esperar(long tiempo_restante_loop) {
 		int nanos = 0;
 		long tiempo_restante_loop_milis = 0;
 		try {
-//			Thread.currentThread();
-//			Thread.sleep(tiempo_restante_loop);
 			if (tiempo_restante_loop > 999999) {
 				tiempo_restante_loop_milis = tiempo_restante_loop /1000000;
 				
 			}
 			nanos = (int) tiempo_restante_loop % 1000000;
 			
-			//System.out.println(">>> Esperando "+tiempo_restante_loop_milis+" ms, "+nanos+" ns");
 			
 			Thread.currentThread().sleep(tiempo_restante_loop_milis, nanos);
 			
