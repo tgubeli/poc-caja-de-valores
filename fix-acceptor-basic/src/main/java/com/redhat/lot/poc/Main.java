@@ -23,7 +23,7 @@ public class Main {
 			
 			
 			
-			initGenerator(2500, 1000, 10000, 4);
+			initGenerator(2500, 1000, 8000, 6);
 			
 		}
 		
@@ -62,7 +62,7 @@ public class Main {
 				
 			}
 		};
-		timer.schedule(task,10000,30000); // cada 30 segundos se crean nuevos mensajes
+		timer.schedule(task,10000,10000); // (task, espacio_inicial_tiempo, tick) cada 30 segundos se crean nuevos mensajes
 
 		//timer.cancel();//stop the timer
 		
