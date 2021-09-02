@@ -51,13 +51,11 @@ public class ServerApplicationAdapter implements quickfix.Application {
     @Override
 	public void onLogon(SessionID sessionID) {
         log.info("--------- onLogon ---------");
-        
-
         Map<String, Object> config = new HashMap<String, Object>();
-        String groupId = sessionID.toString().substring(sessionID.toString().lastIndexOf(">", 0));
-        log.info("GroupID: "+groupId);
-        System.out.println("GroupID: "+groupId);
-        config.put("group.id", sessionID.toString());
+        String session = sessionID.toString();
+
+        String groupId = session.substring(sessionID.toString().lastIndexOf(">")+1);
+        config.put("group.id", groupId);
         config.put("topic", kafkaTopic);
         config.put("bootstrap.servers", kafkaServer);
         config.put("auto.offset.reset", "earliest");
