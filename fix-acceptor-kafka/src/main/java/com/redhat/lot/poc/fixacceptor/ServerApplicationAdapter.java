@@ -39,6 +39,9 @@ public class ServerApplicationAdapter implements quickfix.Application {
     @ConfigProperty(name = "kafka.bootstrap.servers")
 	String kafkaServer;
 
+    @ConfigProperty(name = "kafka.auto.offset.reset")
+	String offSetReset;
+
     boolean done = false;
     volatile String last;
 
@@ -51,19 +54,27 @@ public class ServerApplicationAdapter implements quickfix.Application {
     @Override
 	public void onLogon(SessionID sessionID) {
         log.info("--------- onLogon ---------");
-        Map<String, Object> config = new HashMap<String, Object>();
-        String session = sessionID.toString();
+        KafkaConsumer<String, String> consumer = buildConsumer(sessionID.toString());
+        consumer.subscribe(Collections.singleton(kafkaTopic));
+        new Thread( new ConsumerRunnable(sessionID, consumer)).start();
+    }
 
-        String groupId = session.substring(sessionID.toString().lastIndexOf(">")+1);
+    private KafkaConsumer<String, String> buildConsumer(String session){
+        Map<String, Object> config = new HashMap<String, Object>();
+
+        String groupId = session.substring(session.lastIndexOf(">")+1);
         config.put("group.id", groupId);
         config.put("topic", kafkaTopic);
         config.put("bootstrap.servers", kafkaServer);
-        config.put("auto.offset.reset", "earliest");
-        
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config, new StringDeserializer(), new StringDeserializer());
-        consumer.subscribe(Collections.singleton(kafkaTopic));
-        log.info("--------- Starting kafka consumer Thread with Group ID: "+groupId +"---------");
-        new Thread( new ConsumerRunnable(sessionID, consumer)).start();
+        config.put("auto.offset.reset", offSetReset);
+
+        log.info("Starting kafka consumer");
+        log.info("\t group.id: "+groupId);
+        log.info("\t topic: "+kafkaTopic);
+        log.info("\t bootstrap.servers: "+kafkaServer);
+        log.info("\t auto.offset.reset: "+offSetReset);
+
+        return new KafkaConsumer<>(config, new StringDeserializer(), new StringDeserializer());
     }
     
     static class ConsumerRunnable implements Runnable {
@@ -84,9 +95,9 @@ public class ServerApplicationAdapter implements quickfix.Application {
 				
 				final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
 	            consumerRecords.forEach(record -> {
-	                System.out.printf("Polled Record:(%s, %s, %d, %d)\n",
-	                            record.key(), record.value(),
-	                            record.partition(), record.offset());
+	                log.info("Polled Record:");
+                    log.info("\t record.key: "+record.key()+" record.value: "+record.value());
+                    log.info("\t record.partition: "+record.partition()+" record.offset: "+record.offset());
 	
 	                try {
 	                    Message fixMessage = new Message();
