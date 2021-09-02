@@ -1,7 +1,5 @@
 package com.redhat.lot.poc.fixacceptor;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.net.InetSocketAddress;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -21,20 +19,12 @@ import quickfix.SessionSettings;
 import quickfix.ThreadedSocketAcceptor;
 import quickfix.mina.acceptor.DynamicAcceptorSessionProvider;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
-
 @ApplicationScoped
 public class FixAcceptorConfig {
-
-    @ConfigProperty(name = "quickfixj.server.config")
-	String fileName;
 
 	@Inject
 	ServerApplicationAdapter application;
 
-    @Inject
-    Logger log; 
 
 	@Produces
 	public ThreadedSocketAcceptor threadedSocketAcceptor() {
