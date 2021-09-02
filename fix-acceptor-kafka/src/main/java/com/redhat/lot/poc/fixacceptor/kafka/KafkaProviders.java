@@ -21,13 +21,6 @@ public class KafkaProviders {
     Map<String, Object> config;
 
     @Produces
-    KafkaConsumer<String, String> getConsumer() {
-        return new KafkaConsumer<>(config,
-                new StringDeserializer(),
-                new StringDeserializer());
-    }
-
-    @Produces
     AdminClient getAdmin() {
         Map<String, Object> copy = new HashMap<>();
         for (Map.Entry<String, Object> entry : config.entrySet()) {

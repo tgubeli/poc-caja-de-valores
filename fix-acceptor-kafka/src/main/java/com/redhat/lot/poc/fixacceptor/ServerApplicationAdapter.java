@@ -1,21 +1,18 @@
 package com.redhat.lot.poc.fixacceptor;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.time.Duration;
+import java.util.Collections;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Event;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import quickfix.ConfigError;
 import quickfix.DoNotSend;
-import quickfix.FieldConvertError;
 import quickfix.FieldNotFound;
 import quickfix.IncorrectDataFormat;
 import quickfix.IncorrectTagValue;
@@ -25,26 +22,16 @@ import quickfix.RejectLogon;
 import quickfix.Session;
 import quickfix.SessionID;
 import quickfix.SessionNotFound;
-import quickfix.SessionSettings;
 import quickfix.UnsupportedMessageType;
-import quickfix.field.OrdType;
 
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 
-import javax.enterprise.event.Observes;
-
-import java.time.Duration;
-import java.util.Collections;
 
 @ApplicationScoped
 public class ServerApplicationAdapter implements quickfix.Application {
 	
-    @Inject
-	Logger log;
+	public static final Logger log = Logger.getLogger(ServerApplicationAdapter.class);
 
     @ConfigProperty(name = "kafka.topic")
 	String kafkaTopic;
@@ -64,48 +51,69 @@ public class ServerApplicationAdapter implements quickfix.Application {
     @Override
 	public void onLogon(SessionID sessionID) {
         log.info("--------- onLogon ---------");
-        log.info("--------- Starting kafka consumer Thread for Session: "+sessionID.toString());
         
+
         Map<String, Object> config = new HashMap<String, Object>();
+        String groupId = sessionID.toString().substring(sessionID.toString().lastIndexOf(">", 0));
+        log.info("GroupID: "+groupId);
+        System.out.println("GroupID: "+groupId);
         config.put("group.id", sessionID.toString());
         config.put("topic", kafkaTopic);
         config.put("bootstrap.servers", kafkaServer);
         config.put("auto.offset.reset", "earliest");
-
+        
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config, new StringDeserializer(), new StringDeserializer());
         consumer.subscribe(Collections.singleton(kafkaTopic));
-            
-        while (! done) {
-            final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
-            consumerRecords.forEach(record -> {
-                System.out.println("Record key: "+record.key());
-                System.out.printf("Polled Record:(%s, %s, %d, %d)\n",
-                            record.key(), record.value(),
-                            record.partition(), record.offset());
-                last = record.key() + "-" + record.value();
+        log.info("--------- Starting kafka consumer Thread with Group ID: "+groupId +"---------");
+        new Thread( new ConsumerRunnable(sessionID, consumer)).start();
+    }
+    
+    static class ConsumerRunnable implements Runnable {
 
-                try {
-                    Message fixMessage = new Message();
-                    fixMessage.fromString(record.value(), null, false);
-                    Session.sendToTarget(fixMessage, sessionID);
-                } catch (InvalidMessage e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (SessionNotFound e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                
-            });
-        }
-        
-        consumer.close();
+        private SessionID sessionID;
+		private Session session;
+		private KafkaConsumer<String, String> consumer;
+
+		public ConsumerRunnable(SessionID sessionID, KafkaConsumer<String, String> consumer) {
+			this.sessionID = sessionID;
+			this.session = Session.lookupSession(sessionID);
+    		this.consumer = consumer;
+    	}
+    	
+		@Override
+		public void run() {
+			while(session.isLoggedOn()) {
+				
+				final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
+	            consumerRecords.forEach(record -> {
+	                System.out.printf("Polled Record:(%s, %s, %d, %d)\n",
+	                            record.key(), record.value(),
+	                            record.partition(), record.offset());
+	
+	                try {
+	                    Message fixMessage = new Message();
+	                    fixMessage.fromString(record.value(), null, false);
+	                    Session.sendToTarget(fixMessage, sessionID);
+	                } catch (InvalidMessage e) {
+	                	log.info("Erro ao enviar", e);
+	                    e.printStackTrace();
+	                } catch (SessionNotFound e) {
+	                    // TODO Auto-generated catch block
+	                    e.printStackTrace();
+	                }
+	                
+	            });
+
+			}
+			log.info("=======Matando a Thread: "+sessionID);
+			consumer.close();
+		}
+    	
     }
 
     @Override
 	public void onLogout(SessionID sessionID) {
         log.info("--------- onLogout ---------");
-        done = false;
     }
 
     @Override
@@ -115,7 +123,7 @@ public class ServerApplicationAdapter implements quickfix.Application {
 
     @Override
 	public void toApp(quickfix.Message message, SessionID sessionID) throws DoNotSend {
-        log.info("--------- toApp ---------");
+        //log.info("--------- toApp ---------");
     }
 
     @Override
