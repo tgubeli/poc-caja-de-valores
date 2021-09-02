@@ -28,9 +28,6 @@ spec:
               - key: application.properties
                 path: application.properties
             defaultMode: 420
-        - name: fix-iniciator-volume
-          persistentVolumeClaim:
-            claimName: pvc-fix-iniciator
       containers:
         - name: fix-iniciator
           image: fix-iniciator:latest
@@ -50,8 +47,6 @@ spec:
             - name: application-config
               readOnly: true
               mountPath: /deployments/config
-            - name: fix-iniciator-volume
-              mountPath: /tmp/banzai/data
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           imagePullPolicy: IfNotPresent

@@ -154,10 +154,6 @@
         namespace: '{{ project_name }}'
         resource_definition: "{{ lookup('template', 'fix-acceptor/service.yaml.j2') }}"
 
-
-
-
-
     - name: Create FIX Acceptor Basic Build
       shell: "oc new-build --name fix-acceptor-basic --binary --strategy source --image-stream java:openjdk-11-el7 -n {{ project_name }}"
 
@@ -219,12 +215,6 @@
         state: present
         namespace: '{{ project_name }}'
         resource_definition: "{{ lookup('template', 'fix-iniciator/configmap.yaml.j2') }}"
-
-    - name: Create Fix Iniciator PVC
-      k8s:
-        state: present
-        namespace: '{{ project_name }}'
-        resource_definition: "{{ lookup('template', 'fix-iniciator/pvc.yaml.j2') }}"
 
     - name: Create Fix Iniciator Deployment
       k8s:
