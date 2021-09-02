@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
@@ -29,6 +30,7 @@ import quickfix.UnsupportedMessageType;
 import quickfix.field.OrdType;
 
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -44,11 +46,11 @@ public class ServerApplicationAdapter implements quickfix.Application {
     @Inject
 	Logger log;
 
-    @Inject
-    KafkaConsumer<String, String> consumer;
-
     @ConfigProperty(name = "kafka.topic")
 	String kafkaTopic;
+
+    @ConfigProperty(name = "kafka.bootstrap.servers")
+	String kafkaServer;
 
     boolean done = false;
     volatile String last;
@@ -62,12 +64,21 @@ public class ServerApplicationAdapter implements quickfix.Application {
     @Override
 	public void onLogon(SessionID sessionID) {
         log.info("--------- onLogon ---------");
-        log.info("--------- Starting kafka consumer Thread ---------");
+        log.info("--------- Starting kafka consumer Thread for Session: "+sessionID.toString());
+        
+        Map<String, Object> config = new HashMap<String, Object>();
+        config.put("group.id", sessionID.toString());
+        config.put("topic", kafkaTopic);
+        config.put("bootstrap.servers", kafkaServer);
+        config.put("auto.offset.reset", "earliest");
+
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config, new StringDeserializer(), new StringDeserializer());
         consumer.subscribe(Collections.singleton(kafkaTopic));
             
         while (! done) {
             final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
             consumerRecords.forEach(record -> {
+                System.out.println("Record key: "+record.key());
                 System.out.printf("Polled Record:(%s, %s, %d, %d)\n",
                             record.key(), record.value(),
                             record.partition(), record.offset());
