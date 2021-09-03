@@ -45,10 +45,12 @@ public class ServerApplicationAdapter implements quickfix.Application {
     boolean done = false;
     volatile String last;
 
+    private static final StringDeserializer deserializer = new StringDeserializer();
+
     @Override
 	public void onCreate(SessionID sessionID) {
         log.info("--------- onCreate ---------");
-    }
+        }
 
     @Override
 	public void onLogon(SessionID sessionID) {
@@ -73,7 +75,7 @@ public class ServerApplicationAdapter implements quickfix.Application {
         log.info("\t bootstrap.servers: "+kafkaServer);
         log.info("\t auto.offset.reset: "+offSetReset);
 
-        return new KafkaConsumer<>(config, new StringDeserializer(), new StringDeserializer());
+        return new KafkaConsumer<>(config, deserializer, deserializer);
     }
     
     static class ConsumerRunnable implements Runnable {
