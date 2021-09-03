@@ -1,17 +1,24 @@
 package com.redhat.lot.poc.fixacceptor;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import quickfix.DoNotSend;
 import quickfix.FieldNotFound;
 import quickfix.IncorrectDataFormat;
@@ -24,129 +31,213 @@ import quickfix.SessionID;
 import quickfix.SessionNotFound;
 import quickfix.UnsupportedMessageType;
 
-import org.apache.kafka.common.serialization.StringDeserializer;
-
-
-
 @ApplicationScoped
 public class ServerApplicationAdapter implements quickfix.Application {
-	
-	public static final Logger log = Logger.getLogger(ServerApplicationAdapter.class);
+
+    public static final Logger log = Logger.getLogger(ServerApplicationAdapter.class);
 
     @ConfigProperty(name = "kafka.topic")
-	String kafkaTopic;
+    String kafkaTopic;
 
     @ConfigProperty(name = "kafka.bootstrap.servers")
-	String kafkaServer;
+    String kafkaServer;
 
     @ConfigProperty(name = "kafka.auto.offset.reset")
-	String offSetReset;
+    String offSetReset;
 
-    boolean done = false;
-    volatile String last;
+    //thread or vertx
+    @ConfigProperty(name = "fixacceptor.execution.mode", defaultValue = "thread")
+    String executionMode;
 
     private static final StringDeserializer deserializer = new StringDeserializer();
 
-    @Override
-	public void onCreate(SessionID sessionID) {
-        log.info("--------- onCreate ---------");
-        }
+    @Inject
+    Vertx vertx;
 
     @Override
-	public void onLogon(SessionID sessionID) {
-        log.info("--------- onLogon ---------");
-        KafkaConsumer<String, String> consumer = buildConsumer(sessionID.toString());
-        consumer.subscribe(Collections.singleton(kafkaTopic));
-        new Thread( new ConsumerRunnable(sessionID, consumer)).start();
+    public void onCreate(SessionID sessionID) {
+        log.info("--------- onCreate ---------");
     }
 
-    private KafkaConsumer<String, String> buildConsumer(String session){
-        Map<String, Object> config = new HashMap<String, Object>();
+    @Override
+    public void onLogon(SessionID sessionID) {
+        log.infof("--------- onLogon ------ %s", executionMode);
+        if("thread".equals(executionMode)) {
+            KafkaConsumer<String, String> consumer = buildConsumer(sessionID.toString());
+            consumer.subscribe(Collections.singleton(kafkaTopic));
+            new Thread( new ConsumerRunnable(sessionID, consumer)).start();
+        }else {
+            io.vertx.kafka.client.consumer.KafkaConsumer<String, String> consumerVertx = buildConsumerVertx(
+                sessionID.toString());
 
-        String groupId = session.substring(session.lastIndexOf(">")+1);
+            consumerVertx.subscribe(kafkaTopic).onSuccess(v -> {
+
+                vertx.setPeriodic(10, timerId -> consumerVertx.poll(Duration.ofMillis(100))
+                    .onSuccess(new VertxHandler(sessionID, timerId)).onFailure(cause -> {
+                        log.info("Erro", cause);
+                        // Stop polling if something went wrong
+                        vertx.cancelTimer(timerId);
+                    })
+                );
+            });
+        }
+        
+
+    }
+
+    private KafkaConsumer<String, String> buildConsumer(String session) {
+        Map<String, Object> config = buildConfig(session);
+
+        return new KafkaConsumer<>(config, deserializer, deserializer);
+    }
+
+    private Map<String, Object> buildConfig(String session) {
+        Map<String, Object> config = new HashMap<>();
+
+        String groupId = session.substring(session.lastIndexOf(">") + 1);
         config.put("group.id", groupId);
         config.put("topic", kafkaTopic);
         config.put("bootstrap.servers", kafkaServer);
         config.put("auto.offset.reset", offSetReset);
 
         log.info("Starting kafka consumer");
-        log.info("\t group.id: "+groupId);
-        log.info("\t topic: "+kafkaTopic);
-        log.info("\t bootstrap.servers: "+kafkaServer);
-        log.info("\t auto.offset.reset: "+offSetReset);
-
-        return new KafkaConsumer<>(config, deserializer, deserializer);
+        log.info("\t group.id: " + groupId);
+        log.info("\t topic: " + kafkaTopic);
+        log.info("\t bootstrap.servers: " + kafkaServer);
+        log.info("\t auto.offset.reset: " + offSetReset);
+        return config;
     }
-    
-    static class ConsumerRunnable implements Runnable {
 
-        private SessionID sessionID;
-		private Session session;
-		private KafkaConsumer<String, String> consumer;
+    private io.vertx.kafka.client.consumer.KafkaConsumer<String, String> buildConsumerVertx(String session) {
+        Map<String, String> config = new HashMap<String, String>();
 
-		public ConsumerRunnable(SessionID sessionID, KafkaConsumer<String, String> consumer) {
-			this.sessionID = sessionID;
-			this.session = Session.lookupSession(sessionID);
-    		this.consumer = consumer;
-    	}
-    	
-		@Override
-		public void run() {
-			while(session.isLoggedOn()) {
-				
-				final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
-	            consumerRecords.forEach(record -> {
-	                log.info("Polled Record:");
-                    log.info("\t record.key: "+record.key()+" record.value: "+record.value());
-                    log.info("\t record.partition: "+record.partition()+" record.offset: "+record.offset());
-	
-	                try {
-	                    Message fixMessage = new Message();
-	                    fixMessage.fromString(record.value(), null, false);
-	                    Session.sendToTarget(fixMessage, sessionID);
-	                } catch (InvalidMessage e) {
-	                	log.info("Erro ao enviar", e);
-	                    e.printStackTrace();
-	                } catch (SessionNotFound e) {
-	                    // TODO Auto-generated catch block
-	                    e.printStackTrace();
-	                }
-	                
-	            });
+        String groupId = session.substring(session.lastIndexOf(">") + 1);
+        config.put("group.id", groupId);
+        config.put("topic", kafkaTopic);
+        config.put("bootstrap.servers", kafkaServer);
+        config.put("auto.offset.reset", offSetReset);
 
-			}
-			log.info("=======Matando a Thread: "+sessionID);
-			consumer.close();
-		}
-    	
+        log.info("Starting kafka consumer");
+        log.info("\t group.id: " + groupId);
+        log.info("\t topic: " + kafkaTopic);
+        log.info("\t bootstrap.servers: " + kafkaServer);
+        log.info("\t auto.offset.reset: " + offSetReset);
+
+        return io.vertx.kafka.client.consumer.KafkaConsumer.create(vertx, config, deserializer, deserializer);
     }
 
     @Override
-	public void onLogout(SessionID sessionID) {
+    public void onLogout(SessionID sessionID) {
         log.info("--------- onLogout ---------");
     }
 
     @Override
-	public void toAdmin(quickfix.Message message, SessionID sessionID) {
+    public void toAdmin(quickfix.Message message, SessionID sessionID) {
         log.info("--------- toAdmin ---------");
     }
 
     @Override
-	public void toApp(quickfix.Message message, SessionID sessionID) throws DoNotSend {
-        //log.info("--------- toApp ---------");
+    public void toApp(quickfix.Message message, SessionID sessionID) throws DoNotSend {
+        // log.info("--------- toApp ---------");
     }
 
     @Override
-	public void fromAdmin(quickfix.Message message, SessionID sessionID) throws FieldNotFound, IncorrectDataFormat,
-            IncorrectTagValue, RejectLogon {
+    public void fromAdmin(quickfix.Message message, SessionID sessionID)
+            throws FieldNotFound, IncorrectDataFormat, IncorrectTagValue, RejectLogon {
         log.info("--------- fromAdmin ---------");
     }
 
     @Override
-	public void fromApp(quickfix.Message message, SessionID sessionID) throws FieldNotFound, IncorrectDataFormat,
-            IncorrectTagValue, UnsupportedMessageType {
+    public void fromApp(quickfix.Message message, SessionID sessionID)
+            throws FieldNotFound, IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
         log.info("--------- fromApp ---------");
-        
+
     }
+
+
+    static class ConsumerRunnable implements Runnable {
+
+        private SessionID sessionID;
+        private Session session;
+        private KafkaConsumer<String, String> consumer;
+
+        public ConsumerRunnable(SessionID sessionID, KafkaConsumer<String, String> consumer) {
+            this.sessionID = sessionID;
+            this.session = Session.lookupSession(sessionID);
+            this.consumer = consumer;
+        }
+
+        @Override
+        public void run() {
+            while (session.isLoggedOn()) {
+
+                final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
+                for (ConsumerRecord<String, String> record : consumerRecords) {
+
+                    log.info("Polled Record:");
+                    log.info("\t record.key: " + record.key() + " record.value: " + record.value());
+                    log.info("\t record.partition: " + record.partition() + " record.offset: " + record.offset());
+
+                    try {
+                        Message fixMessage = new Message();
+                        fixMessage.fromString(record.value(), null, false);
+                        Session.sendToTarget(fixMessage, sessionID);
+                    } catch (InvalidMessage e) {
+                        log.info("Erro ao enviar", e);
+                    } catch (SessionNotFound e) {
+                        log.debug("Erro", e);
+                        break;
+                    }
+
+                }
+
+            }
+            log.info("=======Matando a Thread: " + sessionID);
+            consumer.close();
+        }
+
+    }
+
+    private class VertxHandler implements Handler<KafkaConsumerRecords<String, String>> {
+
+        private final Session session;
+        private final long timerId;
+        private final SessionID sessionID;
+
+        public VertxHandler(SessionID sessionID, long timerId) {
+            this.sessionID = sessionID;
+            this.session = Session.lookupSession(sessionID);
+            this.timerId = timerId;
+        }
+
+        @Override
+        public void handle(KafkaConsumerRecords<String, String> records) {
+            for (int i = 0; i < records.size(); i++) {
+                KafkaConsumerRecord<String, String> record = records.recordAt(i);
+                System.out.println("key=" + record.key() + ",value=" + record.value() + ",partition="
+                        + record.partition() + ",offset=" + record.offset());
+                log.info("Polled Record:");
+                log.info("\t record.key: " + record.key() + " record.value: " + record.value());
+                log.info("\t record.partition: " + record.partition() + " record.offset: " + record.offset());
+
+                try {
+                    Message fixMessage = new Message();
+                    fixMessage.fromString(record.value(), null, false);
+                    Session.sendToTarget(fixMessage, sessionID);
+                } catch (InvalidMessage e) {
+                    log.debug("Erro", e);
+                } catch (SessionNotFound e) {
+                    log.debug("Erro", e);
+                    break;
+                }
+
+            }
+            if (!session.isLoggedOn()) {
+                vertx.cancelTimer(timerId);
+            }
+        }
+
+    }
+
 
 }
