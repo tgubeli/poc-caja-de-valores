@@ -25,7 +25,7 @@ public class GeneratorResource {
 
     //TODO Cambiar este parametro estatico a un properties o algo asi
     @Channel("marketdata")
-    @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 10000)
+    @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 500000)
     Emitter<String> emitter;
 
     @GET
@@ -54,7 +54,7 @@ public class GeneratorResource {
 	        
 	        t.start();
     	}else {
-    		MarketDataGeneratorKafka generator = new MarketDataGeneratorKafka(size,interval,duration,isKafka);
+    		MarketDataGeneratorKafka generator = new MarketDataGeneratorKafka(size,interval,duration,isKafka, chunks);
     		generator.setEmitter(emitter);
     		
     		Thread t = new Thread(generator);
