@@ -1,7 +1,8 @@
+---
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: fix-iniciator
+  name: terminal-{{ item }}
   managedFields:
     - manager: kubectl-create
       operation: Update
@@ -10,12 +11,10 @@ data:
   application.properties: |-
     quarkus.banner.enabled=false
     quarkus.test.continuous-testing=disabled
-
-    #FIX Parameters
     fix.begin-string=FIXT.1.1
     fix.default-appl-ver-id=FIX.5.0SP2
     fix.file-store-path=/tmp/banzai/data
-    fix.socket-connect-host=fix-acceptor-basic
+    fix.socket-connect-host=fix-acceptor-kafka
     fix.socket-connect-port=8199
     fix.target-comp-id=STUN
     fix.reconnect-interval=5
