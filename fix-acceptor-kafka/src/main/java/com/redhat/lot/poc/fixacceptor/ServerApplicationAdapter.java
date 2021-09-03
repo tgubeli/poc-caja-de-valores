@@ -48,7 +48,6 @@ public class ServerApplicationAdapter implements quickfix.Application {
     @Override
 	public void onCreate(SessionID sessionID) {
         log.info("--------- onCreate ---------");
-        // Session.lookupSession(sessionID).getLog().onEvent("Valid order types: " + validOrderTypes);
     }
 
     @Override
