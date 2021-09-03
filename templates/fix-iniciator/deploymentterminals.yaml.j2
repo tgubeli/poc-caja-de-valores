@@ -1,35 +1,35 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: terminal-{{ item }}
+  name: terminal
   labels:
-    app: terminal-{{ item }}
-    app.kubernetes.io/component: terminal-{{ item }}
-    app.kubernetes.io/instance: terminal-{{ item }}
-    app.kubernetes.io/name: terminal-{{ item }}
+    app: terminal
+    app.kubernetes.io/component: terminal
+    app.kubernetes.io/instance: terminal
+    app.kubernetes.io/name: terminal
     app.kubernetes.io/version: 1.0.0-SNAPSHOT
     app.openshift.io/runtime: quarkus
 spec:
   replicas: 1
   selector:
     matchLabels:
-      deployment: terminal-{{ item }}
+      deployment: terminal
   template:
     metadata:
       creationTimestamp: null
       labels:
-        deployment: terminal-{{ item }}
+        deployment: terminal
     spec:
       volumes:
         - name: application-config
           configMap:
-            name: terminal-{{ item }}
+            name: terminal
             items:
               - key: application.properties
                 path: application.properties
             defaultMode: 420
       containers:
-        - name: terminal-{{ item }}
+        - name: terminal
           image: fix-iniciator:latest
           ports:
             - containerPort: 8080
