@@ -12,6 +12,8 @@ public class Metrics {
 	
 	private Map<String, double[]> metricsPerSession = new HashMap<String, double[]>(130);
 	
+	private long cant_messages=0;
+	
 	/**
 	 * Metrics per millisecond ranges, there are 15 ranges with a counter for each one:
 	 * {0-1, 2-3, 4-5, 6-7, 8-9, 10-15, 16-30, 31-90, 91-150, 151-200, 201-300, 301-400, 401-600, 601-1000, 1001-infinite}
@@ -67,6 +69,7 @@ public class Metrics {
 		}
 		
 		addRangeMetricCount((int) diferenciaTimestamp);
+		cant_messages++;
 			
 	}
 	
@@ -115,7 +118,7 @@ public class Metrics {
 			i=i+1;
 		}
 		
-		System.out.println(">>>>> TOTAL METRICS: max["+maxFinal+"], min["+minFinal+"], med["+(mediaFinal/i)+"]");
+		System.out.println(">>>>> TOTAL METRICS: max["+maxFinal+"], min["+minFinal+"], med["+(mediaFinal/i)+"], cant sessions " + sessionIds.length + ", cant_messages=" + cant_messages);
 		
 		// Metrics by time range
 		System.out.println("\t >>>>> METRICS BY TIME RANGE:");
@@ -123,7 +126,7 @@ public class Metrics {
 			System.out.println("\t\t Entre: "+metricsRanges[j][0]+"ms y "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
 		}
 		
-		
+		cant_messages=0;
 		
 	}
 	
@@ -163,6 +166,14 @@ public class Metrics {
 		metricsRanges[13][1] = 1000;
 		metricsRanges[14][0] = 1001;
 		metricsRanges[14][1] = 999999999;
+		
+	}
+
+
+
+	public void remove(String sessionID) {
+		metricsPerSession.remove(sessionID);
+		// TODO Auto-generated method stub
 		
 	}
 	

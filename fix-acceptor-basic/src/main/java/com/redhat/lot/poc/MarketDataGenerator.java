@@ -28,6 +28,11 @@ public class MarketDataGenerator implements Runnable {
 	private long currenttime;
 	private long totalMessagesGenerated;
 	private int cycles;
+	private int errors = 0;
+	private int time_left=0;
+	private String msg2;
+	private int i;
+	
 	
 	private static MarketDataGenerator instance;
 	
@@ -93,17 +98,50 @@ public class MarketDataGenerator implements Runnable {
 		totalMessagesGenerated = 0;
 		
 		// End Time = Time until the thread will be executed
-		endTime = System.nanoTime() + (duration*1000000l);
-		currenttime = System.nanoTime();
+		endTime = System.currentTimeMillis() + duration;
+		currenttime = System.currentTimeMillis();
 		
-		System.out.println(">>> Arrancando... Generando " + quantity+ "] mensajes cada "+interval+" ms Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
+		//System.out.println(">>> Arrancando... Generando " + quantity+ "] mensajes cada "+interval+" ms Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
+		
+		
+		System.out.println(">>> Arrancando... Generando " + quantity+ " mensajes cada 1 ms Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
+	
 		
 		simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 		
-		while (play) {
-			generateMarketData();
+		try {
+			while (play) {
+				generateMarketData2();
+				currenttime = System.currentTimeMillis();
+				if(currenttime>=endTime) {
+					//System.out.println((">>> Time is up! currentTime: "+currenttime+" >= "+endTime));
+					stop();
+				}
+			}
+		} catch (InterruptedException ie) {
+			ie.printStackTrace();
 		}
 
+	}
+	
+	public void generateMarketData2() throws InterruptedException {
+		
+		msg2 = MarketDataGenerator.generateStringMessage(); //all with the same timestamp in each cycle
+		i = 0;
+		initPerSecondTime = System.nanoTime();
+		for (i = 0; i < (quantity); i++) {
+			
+			CircularList.getInstance().insert(msg2);
+		}
+		totalMessagesGenerated = totalMessagesGenerated + i;
+		time_left = 1000000 - (int) (System.nanoTime() - initPerSecondTime) ;
+		if (time_left < 0) {
+			//means that took more than 1 milisecond
+			errors++;
+		} else {
+			Thread.currentThread().sleep(0,time_left);
+		}
+		
 	}
 
 	public void generateMarketData() {
@@ -199,10 +237,12 @@ public class MarketDataGenerator implements Runnable {
 		
 		System.out.println((">>> Time is up ("+duration+" ms)! Stopping thread..."));
 		System.out.println((">>> Total Messages Generated... ("+totalMessagesGenerated+")"));
+		System.out.println((">>> Time errors... ("+errors+")"));
 		
 		Metrics.getInstance().logMetrics();
 		
 		play = false;
+
 	}
 	
 
