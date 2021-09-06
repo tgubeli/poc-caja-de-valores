@@ -14,6 +14,8 @@ public class Metrics {
 	
 	private long cant_messages=0;
 	
+	private long time = System.currentTimeMillis()-1;
+	
 	/**
 	 * Metrics per millisecond ranges, there are 15 ranges with a counter for each one:
 	 * {0-1, 2-3, 4-5, 6-7, 8-9, 10-15, 16-30, 31-90, 91-150, 151-200, 201-300, 301-400, 401-600, 601-1000, 1001-infinite}
@@ -102,6 +104,8 @@ public class Metrics {
 		double minFinal = 0;
 		double mediaFinal = 0;
 		
+		
+		
 		// print/log all metrics per Session ID and collect/calculate a Total Metrics values
 		int i = 0;
 		for(double[] valoresActuales : hashMetricsTemp.values()) {
@@ -118,8 +122,19 @@ public class Metrics {
 			i=i+1;
 		}
 		
-		System.out.println(">>>>> TOTAL METRICS: max["+maxFinal+"], min["+minFinal+"], med["+(mediaFinal/i)+"], cant sessions " + sessionIds.length + ", cant_messages=" + cant_messages);
+		long msg_per_session= 0;
+		if (sessionIds.length>0) {
+			msg_per_session= (cant_messages / sessionIds.length);
+		}
+		long elapsed_time = (System.currentTimeMillis() - time)/1000;
+		long msg_sec = msg_per_session / elapsed_time;
 		
+		
+		System.out.println(">>>>> TOTAL METRICS: max[" + maxFinal + " ms], min[" + minFinal + " ms], med["
+				+ (mediaFinal / i) + "ms ], \ncant sessions " + sessionIds.length + ", cant_messages=" + cant_messages
+				+ ", msg_per_session=" + (msg_per_session)
+				+ ", msg_sec=" + msg_sec + ", elapsed_time="+ elapsed_time + " s");
+
 		// Metrics by time range
 		System.out.println("\t >>>>> METRICS BY TIME RANGE:");
 		for(int j =0; j < metricsRanges.length; j++) {
@@ -127,6 +142,7 @@ public class Metrics {
 		}
 		
 		cant_messages=0;
+		time = System.currentTimeMillis();
 		
 	}
 	

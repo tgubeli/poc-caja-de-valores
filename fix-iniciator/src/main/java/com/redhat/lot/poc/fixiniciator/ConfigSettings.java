@@ -44,6 +44,8 @@ public class ConfigSettings {
     	String socketConnectPort = ConfigProvider.getConfig().getValue("fix.socketConnectPort",String.class);
     	String logoutTimeout = ConfigProvider.getConfig().getValue("fix.logoutTimeout",String.class);
     	String targetCompID = ConfigProvider.getConfig().getValue("fix.targetCompID",String.class);
+       	String screenLogShowOutcoming = ConfigProvider.getConfig().getValue("fix.ScreenLogShowOutcoming",String.class);
+    	String screenLogShowIncoming = ConfigProvider.getConfig().getValue("fix.ScreenLogShowIncoming",String.class);
     	
     	SessionID id1 = new SessionID(new BeginString("FIXT.1.1"), 
     			new SenderCompID(host), 
@@ -64,6 +66,9 @@ public class ConfigSettings {
         d.setString("ResetOnLogon", "Y");
         d.setString("ResetOnDisconnect", "Y");
         d.setString("DefaultApplVerID", "FIX.5.0SP2");
+        d.setString("ScreenLogShowIncoming","N");
+        d.setString("ScreenLogShowOutcoming","N");
+        d.setBool("ScreenLogShowIncoming", false);
         
         settings.set(id1,d);
         

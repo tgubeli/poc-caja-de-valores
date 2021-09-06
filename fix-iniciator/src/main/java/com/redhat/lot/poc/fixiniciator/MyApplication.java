@@ -14,6 +14,7 @@ import quickfix.SessionID;
 import quickfix.UnsupportedMessageType;
 
 public class MyApplication implements Application {
+	private int cant_messages=0;
 
     public void onCreate(SessionID sessionID) {
     }
@@ -38,10 +39,13 @@ public class MyApplication implements Application {
 
     public void fromApp(quickfix.Message message, SessionID sessionID) throws FieldNotFound,
             IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
-        try {
-            SwingUtilities.invokeLater(new MessageProcessor(message, sessionID));
-        } catch (Exception e) {
-        }
+    	cant_messages++;
+    	if (cant_messages == 50000) {
+    		System.out.println("cant_messages=" + cant_messages);
+    		cant_messages=0;
+    	}
+    	
+
     }
 
     public class MessageProcessor implements Runnable {

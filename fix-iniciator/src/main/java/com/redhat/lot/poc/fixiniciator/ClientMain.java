@@ -63,11 +63,11 @@ public class ClientMain implements QuarkusApplication{
             MyApplication application = new MyApplication();
             //MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
             MessageStoreFactory messageStoreFactory = new MemoryStoreFactory();
-            LogFactory logFactory = new ScreenLogFactory(true, true, true, logHeartbeats);
+            LogFactory logFactory = new ScreenLogFactory(false, false, false, logHeartbeats);
             MessageFactory messageFactory = new DefaultMessageFactory();
 
             // QuickFix :: Socket Initiator...
-            initiator = new ThreadedSocketInitiator(application, messageStoreFactory, settings, logFactory, messageFactory);
+            initiator = new ThreadedSocketInitiator(application, messageStoreFactory, settings, null, messageFactory);
             
             // QuickFix :: Start Socket Initiator...
             initiator.start();
@@ -75,7 +75,7 @@ public class ClientMain implements QuarkusApplication{
             for (SessionID sessionId : initiator.getSessions()) {
                 Session.lookupSession(sessionId).logon();
             }
-            System.out.println(">>> Logged On?? "+initiator.isLoggedOn());
+            System.out.println(">>> Logged On???? "+initiator.isLoggedOn());
             
             //Quarkus.run(args); 
             Quarkus.waitForExit();
@@ -107,7 +107,7 @@ public class ClientMain implements QuarkusApplication{
     	String host = InetAddress.getLocalHost().getHostName();
     	
     	SessionID id1 = new SessionID(new BeginString("FIXT.1.1"), 
-    			new SenderCompID(host), 
+    			new SenderCompID(host + System.currentTimeMillis()), 
     			new TargetCompID(fixConfig.targetCompID()), "Session1");
         Dictionary d = new Dictionary();
         
@@ -135,6 +135,9 @@ public class ClientMain implements QuarkusApplication{
         d.setString("ResetOnLogon", "Y");
         d.setString("ResetOnDisconnect", "Y");
         d.setString("DefaultApplVerID", fixConfig.defaultApplVerID());
+        d.setString("ScreenLogShowIncoming","N");
+        d.setString("ScreenLogShowOutgoing","N");
+        d.setBool("ScreenLogShowIncoming", false);
         
         settings.set(id1,d);
         
