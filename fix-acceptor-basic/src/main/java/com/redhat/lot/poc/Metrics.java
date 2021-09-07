@@ -127,8 +127,10 @@ public class Metrics {
 			msg_per_session= (cant_messages / sessionIds.length);
 		}
 		long elapsed_time = (System.currentTimeMillis() - time)/1000;
-		long msg_sec = msg_per_session / elapsed_time;
-		
+		long msg_sec=0;
+		if (elapsed_time > 0 ) { 
+			msg_sec = msg_per_session / elapsed_time;
+		}
 		
 		System.out.println(">>>>> TOTAL METRICS: max[" + maxFinal + " ms], min[" + minFinal + " ms], med["
 				+ (mediaFinal / i) + "ms ], \ncant sessions " + sessionIds.length + ", cant_messages=" + cant_messages
@@ -141,6 +143,10 @@ public class Metrics {
 			System.out.println("\t\t Entre: "+metricsRanges[j][0]+"ms y "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
 		}
 		
+		if (cant_messages > 0 ) {
+			System.out.println("% less than 3 ms = " + ((float) (metricsPerRangeTemp[0]+metricsPerRangeTemp[1])/cant_messages)*100);
+			System.out.println("% less than 5 ms = " + ((float) (metricsPerRangeTemp[0]+metricsPerRangeTemp[1]+metricsPerRangeTemp[2])/cant_messages)*100);
+		}
 		cant_messages=0;
 		time = System.currentTimeMillis();
 		
