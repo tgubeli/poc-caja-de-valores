@@ -51,9 +51,7 @@ public class FixSessionSender implements Runnable {
 						
 						fixMessage.fromString(msg, null, false);
 						
-						// add this message metrics
-						Metrics.getInstance().addMetric(sessionID.toString(), fixMessage.getUtcTimeStamp(60), java.time.LocalDateTime.now());
-	
+						
 						// es necesario clonar dado a que los mensajes en la lista son instancias que deben ser 
 						// modificadas para ser enviadas con valores propios de cada initiator (TargetCompID)
 						//fixMessage = (Message) msg.clone();
@@ -61,6 +59,10 @@ public class FixSessionSender implements Runnable {
 						//System.out.println("Sender CID: "+sessionID.getSenderCompID()+", Target CID: "+sessionID.getTargetCompID());
 						
 						Session.sendToTarget(fixMessage, sessionID);
+						
+						// add this message metrics
+						Metrics.getInstance().addMetric(sessionID.toString(), fixMessage.getUtcTimeStamp(60), java.time.LocalDateTime.now());
+	
 					}
 					
 					avanzar_punteros_a_lista();

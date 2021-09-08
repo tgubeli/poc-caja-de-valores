@@ -22,8 +22,10 @@ public class Main {
 			executor.start();
 			
 			
+			int msgs_per_milisecond = 3;
+			msgs_per_milisecond = new Integer(System.getProperty("msgs_per_milisecond", "3"));
 			
-			initGenerator(6, 1000, 10000, 6);
+			initGenerator(msgs_per_milisecond, 10000);
 			
 		}
 		
@@ -41,7 +43,7 @@ public class Main {
 		return inputStream;
 	}
 	
-	private static void initGenerator(int quantity, int interval, int duration, int chunks) {
+	private static void initGenerator(int quantity, int duration) {
 		
 		Timer timer = new Timer();
 		TimerTask task = new TimerTask() {
@@ -51,9 +53,7 @@ public class Main {
 				
 				MarketDataGenerator generator = MarketDataGenerator.getInstance();
 		        generator.setQuantity(quantity);
-		        generator.setInterval(interval);
 		        generator.setDuration(duration);
-		        generator.setChunks(chunks);
 		        generator.setPlay(true);
 		        
 		        Thread t = new Thread(generator);
