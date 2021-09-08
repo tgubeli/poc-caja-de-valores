@@ -22,6 +22,7 @@ import quickfix.RejectLogon;
 import quickfix.Session;
 import quickfix.SessionID;
 import quickfix.SessionNotFound;
+import quickfix.StringField;
 import quickfix.UnsupportedMessageType;
 
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -92,9 +93,11 @@ public class ServerApplicationAdapter implements quickfix.Application {
     	
 		@Override
 		public void run() {
+            final StringField stringField = new StringField(56,sessionID.toString());
+
 			while(session.isLoggedOn()) {
 				
-				final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
+				final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofMillis(1));
 	            consumerRecords.forEach(record -> {
 	                log.info("Polled Record:");
                     log.info("\t record.key: "+record.key()+" record.value: "+record.value());
@@ -103,14 +106,20 @@ public class ServerApplicationAdapter implements quickfix.Application {
 	                try {
 	                    Message fixMessage = new Message();
 	                    fixMessage.fromString(record.value(), null, false);
+
+                        // add this message metrics
+                        Metrics.getInstance().addMetric(sessionID.toString(), fixMessage.getUtcTimeStamp(60), java.time.LocalDateTime.now());
+                        fixMessage.getHeader().setField(stringField);
+                        
+                        // Send to the terminal
 	                    Session.sendToTarget(fixMessage, sessionID);
-	                } catch (InvalidMessage e) {
-	                	log.info("Erro ao enviar", e);
+	                } catch (InvalidMessage e){
 	                    e.printStackTrace();
 	                } catch (SessionNotFound e) {
-	                    // TODO Auto-generated catch block
 	                    e.printStackTrace();
-	                }
+	                } catch (FieldNotFound e) {
+                        e.printStackTrace();
+                    }
 	                
 	            });
 
