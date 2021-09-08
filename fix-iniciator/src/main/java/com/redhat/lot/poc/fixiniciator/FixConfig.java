@@ -14,6 +14,9 @@ public interface FixConfig {
 	String defaultApplVerID();
 	String connectionType();
 	String heartBtInt();
+    String screenLogShowIncoming();
+    String screenLogShowOutgoing();
+
 	
 
 }

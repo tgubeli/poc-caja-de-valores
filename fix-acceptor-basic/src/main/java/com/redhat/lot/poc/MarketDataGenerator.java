@@ -20,14 +20,17 @@ public class MarketDataGenerator implements Runnable {
 	private static SimpleDateFormat simpleDateFormat;
 	private boolean play = true;
 	private int quantity = 100;
-	private int interval = 1000;
-	private long time;
+
 	private long duration;
 	private int chunks=1;
 	private long initPerSecondTime;
 	private long currenttime;
 	private long totalMessagesGenerated;
-	private int cycles;
+	private int errors = 0;
+	private int time_left=0;
+	private String msg2;
+	private int i;
+	
 	
 	private static MarketDataGenerator instance;
 	
@@ -35,9 +38,7 @@ public class MarketDataGenerator implements Runnable {
 	//end time execution, since initTime (inittime + (duration in milliseconds))
 	private long endTime;
 
-	public void setInterval(int interval) {
-		this.interval = interval;
-	}
+
 
 	public void setQuantity(int quantity) {
 		this.quantity = quantity;
@@ -63,15 +64,13 @@ public class MarketDataGenerator implements Runnable {
 		this.duration = duration;
 	}
 
-	public int getInterval() {
-		return interval;
-	}
 
-	public MarketDataGenerator(int quantity, int interval, int duration, int chunks) {
-		this.interval = interval;
+
+	public MarketDataGenerator(int quantity, int duration) {
+
 		this.quantity = quantity;
 		this.duration = duration;
-		this.chunks = chunks;
+
 		
 		this.simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 		
@@ -89,63 +88,57 @@ public class MarketDataGenerator implements Runnable {
 	@Override
 	public void run() {
 		
-		cycles = 0;
+
 		totalMessagesGenerated = 0;
 		
 		// End Time = Time until the thread will be executed
-		endTime = System.nanoTime() + (duration*1000000l);
-		currenttime = System.nanoTime();
+		endTime = System.currentTimeMillis() + duration;
+		currenttime = System.currentTimeMillis();
 		
-		System.out.println(">>> Arrancando... Generando " + quantity+ "] mensajes cada "+interval+" ms Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
+		//System.out.println(">>> Arrancando... Generando " + quantity+ "] mensajes cada "+interval+" ms Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
+		
+		
+		System.out.println(">>> Arrancando... Generando " + quantity+ " mensajes cada 1 ms Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
+	
 		
 		simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 		
-		while (play) {
-			generateMarketData();
-		}
-
-	}
-
-	public void generateMarketData() {
-		
-		cycles = cycles + 1;
-		
-		initPerSecondTime = System.nanoTime();
-		
-		long tiempo_restante_loop = 0;
-		
-		time = System.nanoTime();
-
-		int i = 1;
-		for (i = 1; i <= (quantity/chunks); i++) {
-			
-			CircularList.getInstance().insert(MarketDataGenerator.generateStringMessage());
-			
-			if (System.nanoTime() - time >= (interval/chunks*1000000)) {
-				System.out.println(
-						"**ATENCION!!** Tiempo excedido para ciclo generación de market data en el intervalo. Generado "
-								+ i + " en "+(System.nanoTime() - time)+" ns");
-				break;
+		try {
+			while (play) {
+				generateMarketData2();
+				currenttime = System.currentTimeMillis();
+				if(currenttime>=endTime) {
+					//System.out.println((">>> Time is up! currentTime: "+currenttime+" >= "+endTime));
+					stop();
+				}
 			}
-
-		}
-
-		//TODO ver como calcular esto con nanosegundos
-		tiempo_restante_loop = (interval/chunks*1000000) - (initPerSecondTime - currenttime);
-		if (tiempo_restante_loop > 0) {
-			esperar(tiempo_restante_loop);
-		}
-		
-		//System.out.println((">>> Generado " + i + " mensajes en "+(interval/chunks*1000000)+" ns"));
-		
-		totalMessagesGenerated = totalMessagesGenerated + i;
-		currenttime = System.nanoTime();
-		if(currenttime>=endTime) {
-			//System.out.println((">>> Time is up! currentTime: "+currenttime+" >= "+endTime));
-			stop();
+		} catch (InterruptedException ie) {
+			ie.printStackTrace();
 		}
 
 	}
+	
+	public void generateMarketData2() throws InterruptedException {
+		
+		msg2 = MarketDataGenerator.generateStringMessage(); //all with the same timestamp in each cycle
+		i = 0;
+		initPerSecondTime = System.nanoTime();
+		for (i = 0; i < (quantity); i++) {
+			
+			CircularList.getInstance().insert(msg2);
+		}
+		totalMessagesGenerated = totalMessagesGenerated + i;
+		time_left = 1000000 - (int) (System.nanoTime() - initPerSecondTime) ;
+		if (time_left < 0) {
+			//means that took more than 1 milisecond
+			errors++;
+		} else {
+			Thread.currentThread().sleep(0,time_left);
+		}
+		
+	}
+
+
 
 	public static Message generateMessage(){
 		Message fixMessage = new Message();
@@ -177,32 +170,18 @@ public class MarketDataGenerator implements Runnable {
 		return strFixMessage;
 	}
 	
-	private void esperar(long tiempo_restante_loop) {
-		int nanos = 0;
-		long tiempo_restante_loop_milis = 0;
-		try {
-			if (tiempo_restante_loop > 999999) {
-				tiempo_restante_loop_milis = tiempo_restante_loop /1000000;
-				
-			}
-			nanos = (int) tiempo_restante_loop % 1000000;
-			
-			
-			Thread.currentThread().sleep(tiempo_restante_loop_milis, nanos);
-			
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
+
 	
 	public void stop() {
 		
 		System.out.println((">>> Time is up ("+duration+" ms)! Stopping thread..."));
 		System.out.println((">>> Total Messages Generated... ("+totalMessagesGenerated+")"));
+		System.out.println((">>> Time errors... ("+errors+")"));
 		
 		Metrics.getInstance().logMetrics();
 		
 		play = false;
+
 	}
 	
 
