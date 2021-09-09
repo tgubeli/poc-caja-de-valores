@@ -9,7 +9,7 @@ public class CircularList {
 	private String[] strList;
 	
 
-	public static final int MAX = 250000;
+	public static final int MAX = 2500000;
 	int index = 0;
 	private static CircularList singleton;
 	private double currentLoop = 0;

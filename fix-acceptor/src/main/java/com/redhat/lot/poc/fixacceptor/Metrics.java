@@ -132,21 +132,34 @@ public class Metrics {
 			msg_sec = msg_per_session / elapsed_time;
 		}
 		
-		System.out.println(">>>>> TOTAL METRICS: max[" + maxFinal + " ms], min[" + minFinal + " ms], med["
-				+ (mediaFinal / i) + "ms ], \ncant sessions " + sessionIds.length + ", cant_messages=" + cant_messages
-				+ ", msg_per_session=" + (msg_per_session)
-				+ ", msg_sec=" + msg_sec + ", elapsed_time="+ elapsed_time + " s");
-
+		if (i>0) {
+			System.out.println(">>>>> TOTAL METRICS: max[" + maxFinal + " ms], min[" + minFinal + " ms], med["
+					+ (mediaFinal / i) + "ms ], \ncant sessions " + sessionIds.length + ", cant_messages=" + cant_messages
+					+ ", msg_per_session=" + (msg_per_session)
+					+ ", msg_sec=" + msg_sec + ", elapsed_time="+ elapsed_time + " s");
+	
+			
+			float less_than_3ms = (float) ((metricsPerRangeTemp[0]+metricsPerRangeTemp[1])/cant_messages)*100;
+			float less_than_5ms = (float) ((metricsPerRangeTemp[0]+metricsPerRangeTemp[1]+metricsPerRangeTemp[2])/cant_messages)*100;
+			
+			if (cant_messages > 0 ) {
+				System.out.println("% less than 3 ms = " + less_than_3ms);
+				System.out.println("% less than 5 ms = " + less_than_5ms);
+			}
+	
+			
+			System.out.println(">>>>> TOTAL METRICS CSV, " + maxFinal + "," + minFinal + ","
+					+ (mediaFinal / i) + "," + sessionIds.length 
+					+ "," + msg_sec + ","+ elapsed_time 
+					+ "," + less_than_3ms + "," + less_than_5ms
+					);
+		}
 		// Metrics by time range
 		System.out.println("\t >>>>> METRICS BY TIME RANGE:");
 		for(int j =0; j < metricsRanges.length; j++) {
 			System.out.println("\t\t Entre: "+metricsRanges[j][0]+"ms y "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
 		}
 		
-		if (cant_messages > 0 ) {
-			System.out.println("% less than 3 ms = " + ((float) (metricsPerRangeTemp[0]+metricsPerRangeTemp[1])/cant_messages)*100);
-			System.out.println("% less than 5 ms = " + ((float) (metricsPerRangeTemp[0]+metricsPerRangeTemp[1]+metricsPerRangeTemp[2])/cant_messages)*100);
-		}
 		cant_messages=0;
 		time = System.currentTimeMillis();
 		
