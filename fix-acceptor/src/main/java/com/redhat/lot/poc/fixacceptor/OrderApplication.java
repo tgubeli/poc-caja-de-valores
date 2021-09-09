@@ -1,30 +1,19 @@
 package com.redhat.lot.poc.fixacceptor;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import quickfix.ConfigError;
 import quickfix.DoNotSend;
-import quickfix.FieldConvertError;
 import quickfix.FieldNotFound;
 import quickfix.IncorrectDataFormat;
 import quickfix.IncorrectTagValue;
 import quickfix.RejectLogon;
-import quickfix.Session;
 import quickfix.SessionID;
-import quickfix.SessionSettings;
 import quickfix.UnsupportedMessageType;
-import quickfix.field.OrdType;
-
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class OrderApplication implements quickfix.Application {
@@ -34,8 +23,8 @@ public class OrderApplication implements quickfix.Application {
     @ConfigProperty(name = "sendtokafka")
     Boolean sendToKafka;
 
-    @Inject
-    KafkaProducer<String, String> producer;
+//    @Inject
+//    KafkaProducer<String, String> producer;
 
     // @Channel("marketdata")
     // @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 500000)
@@ -79,7 +68,8 @@ public class OrderApplication implements quickfix.Application {
 	public void onLogon(SessionID sessionID) {
         FixSessionSender sender; 
         if (sendToKafka){
-            sender = new FixSessionSender(sessionID, this.producer);
+            //sender = new FixSessionSender(sessionID, this.producer);
+        	sender = null;
         }else{
             sender = new FixSessionSender(sessionID);
         }

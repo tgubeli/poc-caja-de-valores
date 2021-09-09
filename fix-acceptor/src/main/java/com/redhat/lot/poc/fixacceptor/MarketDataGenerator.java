@@ -3,11 +3,7 @@ package com.redhat.lot.poc.fixacceptor;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-
-import org.jboss.logging.Logger;
-
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 import quickfix.InvalidMessage;
 import quickfix.Message;
@@ -48,29 +44,6 @@ public class MarketDataGenerator implements Runnable {
 
 	public void setEmitter(Emitter<String> emitter) {
 		this.emitter = emitter;
-	}
-
-	//end time execution, since initTime (inittime + (duration in milliseconds))
-	private long endTime;
-
-	public void setQuantity(int quantity) {
-		this.quantity = quantity;
-	}
-
-	public void setPlay(boolean play) {
-		this.play = play;
-	}
-	
-
-
-
-
-	public long getDuration() {
-		return duration;
-	}
-
-	public void setDuration(long duration) {
-		this.duration = duration;
 	}
 
 	
@@ -183,9 +156,6 @@ public class MarketDataGenerator implements Runnable {
 	//end time execution, since initTime (inittime + (duration in milliseconds))
 	private long endTime;
 
-	public void setInterval(int interval) {
-		this.interval = interval;
-	}
 
 	public void setQuantity(int quantity) {
 		this.quantity = quantity;
@@ -195,13 +165,7 @@ public class MarketDataGenerator implements Runnable {
 		this.play = play;
 	}
 	
-	public int getChunks() {
-		return chunks;
-	}
-
-	public void setChunks(int chunks) {
-		this.chunks = chunks;
-	}
+	
 
 	public long getDuration() {
 		return duration;
@@ -211,9 +175,7 @@ public class MarketDataGenerator implements Runnable {
 		this.duration = duration;
 	}
 
-	public int getInterval() {
-		return interval;
-	}
+	
 	
 
 }

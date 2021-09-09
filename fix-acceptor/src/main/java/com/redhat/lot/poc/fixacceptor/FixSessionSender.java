@@ -1,17 +1,11 @@
 package com.redhat.lot.poc.fixacceptor;
 
-import java.time.LocalDateTime;
-
-import quickfix.FieldNotFound;
 import quickfix.InvalidMessage;
 import quickfix.Message;
 import quickfix.Session;
 import quickfix.SessionID;
 import quickfix.SessionNotFound;
 import quickfix.StringField;
-
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 
 
 
@@ -26,19 +20,20 @@ public class FixSessionSender implements Runnable {
 	private double cant_messages=0;
 	private boolean active = true;
 	
-	private KafkaProducer<String, String> producer;
+//	private KafkaProducer<String, String> producer;
 	
 	public FixSessionSender(SessionID sessionID) {
 		this.sessionID = sessionID;
 		this.currentIndex = CircularList.getInstance().getIndex();
 		this.currentLoop = CircularList.getInstance().getCurrentLoop();
 		System.out.println(">>> FixSessionSender creado para sessionID " + sessionID.getSenderCompID());
-
-	public FixSessionSender(SessionID sessionID, KafkaProducer<String, String> producer) {
-		this.sessionID = sessionID;
-		this.producer = producer;
-		System.out.println(">>> FixSessionSender created with SessionID " + sessionID.getSenderCompID() + " and Kafka Producer");
 	}
+
+//	public FixSessionSender(SessionID sessionID, KafkaProducer<String, String> producer) {
+//		this.sessionID = sessionID;
+////		this.producer = producer;
+//		System.out.println(">>> FixSessionSender created with SessionID " + sessionID.getSenderCompID() + " and Kafka Producer");
+//	}
 
 
 	@Override
@@ -103,13 +98,14 @@ public class FixSessionSender implements Runnable {
 	}
 
 	private boolean shouldSendToKafka(){
-		if (this.producer != null){
-			System.out.println("-------> Will send to Kafka");
-			return true;
-		}else{
-			System.out.println("-------> Will not send to Kafka");
-			return false;
-		}
+//		if (this.producer != null){
+//			System.out.println("-------> Will send to Kafka");
+//			return true;
+//		}else{
+//			System.out.println("-------> Will not send to Kafka");
+//			return false;
+//		}
+		return false;
 	}
 	
 
