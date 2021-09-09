@@ -1,5 +1,8 @@
 package com.redhat.lot.poc.fixacceptor;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import javax.inject.Inject;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -14,6 +17,8 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 
+
+
 @Path("/generator")
 public class GeneratorResource {
 
@@ -22,46 +27,44 @@ public class GeneratorResource {
 
     @Inject
     ManagedExecutor managedExecutor;
+    
+    MarketDataGenerator generator;
 
     //TODO Cambiar este parametro estatico a un properties o algo asi
     @Channel("marketdata")
     @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 500000)
     Emitter<String> emitter;
+    
+    Timer timer;
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public String generate(
-    		@QueryParam(value = "sizePerThread") @DefaultValue(value = "10") Integer size, 
-    		@QueryParam(value = "threads") @DefaultValue(value = "1") Integer threads,
-    		@QueryParam(value = "interval") @DefaultValue(value = "1000") Integer interval,
+
     		@QueryParam(value = "duration") @DefaultValue(value = "10000") Integer duration,
-    		@QueryParam(value = "chunks") @DefaultValue(value = "1") Integer chunks,
+    		@QueryParam(value = "cantmsgs") @DefaultValue(value = "1") Integer cantmsgs,
     		@QueryParam(value = "isKafka") @DefaultValue(value = "false") Boolean isKafka
     		) {
         
-    	log.info((">>> Generating: Threads["+threads+"], MessagesPerThread["+size+"], Interval["+interval+"], Duration["+duration+"], Chunks["+chunks+"], IsKafka["+isKafka.toString()+"]"));
+    	log.info((">>> Generating: Duration["+duration+"], Cant_msgs_ms["+cantmsgs+"], IsKafka["+isKafka.toString()+"]"));
         
-    	//for(int i=0;i<threads;i++) {
-    	if(!isKafka) {
-    		MarketDataGenerator generator = MarketDataGenerator.getInstance();
-	        generator.setQuantity(size);
-	        generator.setInterval(interval);
-	        generator.setDuration(duration);
-	        generator.setChunks(chunks);
-	        generator.setPlay(true);
-	        
-	        Thread t = new Thread(generator);
-	        
-	        t.start();
-    	}else {
-    		MarketDataGeneratorKafka generator = new MarketDataGeneratorKafka(size,interval,duration,isKafka, chunks);
+    	 generator = new MarketDataGenerator(cantmsgs,duration,isKafka);
+		 generator.setPlay(true);
+    	if(isKafka) {
+    
     		generator.setEmitter(emitter);
-    		
-    		Thread t = new Thread(generator);
- 	        t.start();
     	}
 
-        return "{'status' : 'STARTED', 'threads' : '"+threads+"', 'messagesPerThread' : '"+size+"', 'interval' : '"+interval+"', 'duration: '"+duration+"','chunks: '"+chunks+"', 'toKafka' : '"+isKafka.toString()+"'}";
+    		
+    		
+    	
+
+		Thread t = new Thread(generator);
+	        t.start();
+
+    	generateLogs();
+
+        return "{'status' : 'STARTED',  'duration: '"+duration+"','cantmsgs: '"+cantmsgs+"', 'toKafka' : '"+isKafka.toString()+"'}";
 	}
 
 	@GET
@@ -77,8 +80,24 @@ public class GeneratorResource {
 	@Path("/stop")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String stop() {
-		MarketDataGenerator.getInstance().stop();
+		generator.stop();
+		timer.cancel();
 		return "{'status' : 'STOPED'}";
+	}
+	
+	private void generateLogs() {
+		timer = new Timer();
+		TimerTask task = new TimerTask() {
+			
+			@Override
+			public void run() {
+				Metrics.getInstance().logMetrics();
+				
+			}
+		};
+		timer.schedule(task,0,10000); // (task, espacio_inicial_tiempo, tick)
+
+	
 	}
   
 }

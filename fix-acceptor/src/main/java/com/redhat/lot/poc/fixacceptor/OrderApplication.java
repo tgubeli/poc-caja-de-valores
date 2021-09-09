@@ -80,6 +80,9 @@ public class OrderApplication implements quickfix.Application {
 	public void onLogout(SessionID sessionID) {
     	//FIXME remove localEventBus consumer
     	System.out.println("OrderApplication.onLogout() "+sessionID);
+    	hashFixSessionSender.get(sessionID.toString()).stop();
+    	hashFixSessionSender.remove(sessionID.toString());
+    	
     	//TODO Destruir el thread
     }
 
