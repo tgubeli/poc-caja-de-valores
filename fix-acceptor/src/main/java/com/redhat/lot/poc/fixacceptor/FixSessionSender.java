@@ -8,6 +8,11 @@ import quickfix.SessionID;
 import quickfix.SessionNotFound;
 import quickfix.StringField;
 
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
+
+
 public class FixSessionSender implements Runnable {
 
 	private int currentIndex = 0;
@@ -15,13 +20,19 @@ public class FixSessionSender implements Runnable {
 	CircularList list = CircularList.getInstance();
 	private SessionID sessionID;
 	final String dif = "Diferencia msg ";
+	private KafkaProducer<String, String> producer;
 	
-
 	public FixSessionSender(SessionID sessionID) {
-		super();
 		this.sessionID = sessionID;
-		System.out.println(">>> FixSessionSender creado para sessionID " + sessionID.getSenderCompID());
+		System.out.println(">>> FixSessionSender created with SessionID " + sessionID.getSenderCompID());
 	}
+
+	public FixSessionSender(SessionID sessionID, KafkaProducer<String, String> producer) {
+		this.sessionID = sessionID;
+		this.producer = producer;
+		System.out.println(">>> FixSessionSender created with SessionID " + sessionID.getSenderCompID() + " and Kafka Producer");
+	}
+
 
 	@Override
 	public void run() {
@@ -35,10 +46,8 @@ public class FixSessionSender implements Runnable {
 			try {
 
 				if (estoy_sincronizado_con_la_lista_circular()) 	{
-					
-					//Message msg = list.get(currentIndex);
 					String msg = list.getStr(currentIndex);
-					
+
 					fixMessage = new Message();
 					fixMessage.fromString(msg, null, false);
 					
@@ -50,16 +59,15 @@ public class FixSessionSender implements Runnable {
 					//fixMessage = (Message) msg.clone();
 					fixMessage.getHeader().setField(stringField);
 
+					// Should send to both (Kafka and circular list) or just one ?
 					Session.sendToTarget(fixMessage, sessionID);
+					if (shouldSendToKafka()){
+						producer.send(new ProducerRecord<>("marketdata", fixMessage.toString()));
+					}
 					
 					avanzar_punteros_a_lista();
-					
-					
 				} else if (ya_consumi_todos_los_mensajes_de_la_lista()) {
-					
-					
 					Thread.currentThread().sleep(1);
-					
 				} else {
 					System.out.println("Perdi por más de 1 vuelta!!! currentLoop=" + currentLoop + " lista "
 							+ list.getCurrentLoop());
@@ -71,7 +79,16 @@ public class FixSessionSender implements Runnable {
 			}
 		}
 
+	}
 
+	private boolean shouldSendToKafka(){
+		if (this.producer != null){
+			System.out.println("-------> Will send to Kafka");
+			return true;
+		}else{
+			System.out.println("-------> Will not send to Kafka");
+			return false;
+		}
 	}
 	
 

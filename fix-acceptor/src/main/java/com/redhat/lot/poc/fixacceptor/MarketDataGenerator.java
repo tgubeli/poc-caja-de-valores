@@ -6,23 +6,18 @@ import java.util.Date;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
 
-import quickfix.DoubleField;
+
 import quickfix.InvalidMessage;
 import quickfix.Message;
 import quickfix.field.TransactTime;
 
-@ApplicationScoped
 public class MarketDataGenerator implements Runnable {
-
-	@Inject
-	Logger log;
 
 	//private final static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
 	private static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=changedate10=015";
-	private String fixDatePattern = "YYYYMMDD-HH:mm:ss.SSS";
+	private String fixDatePattern = "YYYYMMdd-HH:mm:ss.SSS";
 	private static SimpleDateFormat simpleDateFormat;
 	private boolean play = true;
 	private int quantity = 100;
@@ -34,55 +29,11 @@ public class MarketDataGenerator implements Runnable {
 	private long currenttime;
 	private long totalMessagesGenerated;
 	private int cycles;
-	
 	private static MarketDataGenerator instance;
-	
-
-	private Emitter<String> emitter;
-	
-	
-	public Emitter<String> getEmitter() {
-		return emitter;
-	}
-
-	public void setEmitter(Emitter<String> emitter) {
-		this.emitter = emitter;
-	}
-
-	//end time execution, since initTime (inittime + (duration in milliseconds))
-	private long endTime;
-
-	public void setInterval(int interval) {
-		this.interval = interval;
-	}
-
-	public void setQuantity(int quantity) {
-		this.quantity = quantity;
-	}
-
-	public void setPlay(boolean play) {
-		this.play = play;
-	}
-	
-	public int getChunks() {
-		return chunks;
-	}
-
-	public void setChunks(int chunks) {
-		this.chunks = chunks;
-	}
-
-	public long getDuration() {
-		return duration;
-	}
-
-	public void setDuration(long duration) {
-		this.duration = duration;
-	}
-
-	public int getInterval() {
-		return interval;
-	}
+	private String msg2;
+	private int i;
+	private int errors = 0;
+	private int time_left=0;
 
 	public MarketDataGenerator(int quantity, int interval, int duration, int chunks) {
 		this.interval = interval;
@@ -90,7 +41,7 @@ public class MarketDataGenerator implements Runnable {
 		this.duration = duration;
 		this.chunks = chunks;
 		
-		this.simpleDateFormat = new SimpleDateFormat(fixDatePattern);
+		MarketDataGenerator.simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 	}
 	
 	public static MarketDataGenerator getInstance() {
@@ -99,25 +50,33 @@ public class MarketDataGenerator implements Runnable {
 		return instance;
 	}
 	
-	public MarketDataGenerator() {
-	}
+	public MarketDataGenerator() {}
 
 	@Override
 	public void run() {
 		
-		cycles = 0;
 		totalMessagesGenerated = 0;
 		
 		// End Time = Time until the thread will be executed
-		endTime = System.nanoTime() + (duration*1000000l);
-		currenttime = System.nanoTime();
+		endTime = System.currentTimeMillis() + duration;
+		currenttime = System.currentTimeMillis();
 		
-		System.out.println(">>> Arrancando... Generando " + quantity+ "] mensajes cada "+interval+" ms Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
+		System.out.println(">>> Arrancando... Generando " + quantity+ " mensajes cada 1 ms Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
+	
 		
 		simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 		
-		while (play) {
-			generateMarketData();
+		try {
+			while (play) {
+				generateMarketData2();
+				currenttime = System.currentTimeMillis();
+				if(currenttime>=endTime) {
+					//System.out.println((">>> Time is up! currentTime: "+currenttime+" >= "+endTime));
+					stop();
+				}
+			}
+		} catch (InterruptedException ie) {
+			ie.printStackTrace();
 		}
 
 	}
@@ -135,7 +94,7 @@ public class MarketDataGenerator implements Runnable {
 		int i = 1;
 		for (i = 1; i <= (quantity/chunks); i++) {
 			
-			CircularList.getInstance().insert(MarketDataGenerator.generateMessage());
+			CircularList.getInstance().insert(MarketDataGenerator.generateStringMessage());
 			
 			if (System.nanoTime() - time >= (interval/chunks*1000000)) {
 				System.out.println(
@@ -162,6 +121,26 @@ public class MarketDataGenerator implements Runnable {
 			stop();
 		}
 
+	}
+
+	public void generateMarketData2() throws InterruptedException {
+		
+		msg2 = MarketDataGenerator.generateStringMessage(); //all with the same timestamp in each cycle
+		i = 0;
+		initPerSecondTime = System.nanoTime();
+		for (i = 0; i < (quantity); i++) {
+			
+			CircularList.getInstance().insert(msg2);
+		}
+		totalMessagesGenerated = totalMessagesGenerated + i;
+		time_left = 1000000 - (int) (System.nanoTime() - initPerSecondTime) ;
+		if (time_left < 0) {
+			//means that took more than 1 milisecond
+			errors++;
+		} else {
+			Thread.currentThread().sleep(0,time_left);
+		}
+		
 	}
 
 	public static Message generateMessage(){
@@ -205,7 +184,8 @@ public class MarketDataGenerator implements Runnable {
 			nanos = (int) tiempo_restante_loop % 1000000;
 			
 			
-			Thread.currentThread().sleep(tiempo_restante_loop_milis, nanos);
+			Thread.currentThread();
+			Thread.sleep(tiempo_restante_loop_milis, nanos);
 			
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -220,6 +200,41 @@ public class MarketDataGenerator implements Runnable {
 		Metrics.getInstance().logMetrics();
 		
 		play = false;
+	}
+
+	//end time execution, since initTime (inittime + (duration in milliseconds))
+	private long endTime;
+
+	public void setInterval(int interval) {
+		this.interval = interval;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+
+	public void setPlay(boolean play) {
+		this.play = play;
+	}
+	
+	public int getChunks() {
+		return chunks;
+	}
+
+	public void setChunks(int chunks) {
+		this.chunks = chunks;
+	}
+
+	public long getDuration() {
+		return duration;
+	}
+
+	public void setDuration(long duration) {
+		this.duration = duration;
+	}
+
+	public int getInterval() {
+		return interval;
 	}
 	
 
