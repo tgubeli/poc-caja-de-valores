@@ -1,7 +1,10 @@
 package com.redhat.lot.poc.fixacceptor;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import quickfix.Message;
 
+@ApplicationScoped
 public class CircularList {
 	
 	private Message[] list;

@@ -15,6 +15,7 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import io.quarkus.scheduler.Scheduled;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
@@ -29,7 +30,6 @@ import quickfix.RejectLogon;
 import quickfix.Session;
 import quickfix.SessionID;
 import quickfix.SessionNotFound;
-import quickfix.StringField;
 import quickfix.UnsupportedMessageType;
 
 @ApplicationScoped
@@ -55,9 +55,17 @@ public class ServerApplicationAdapter implements quickfix.Application {
     @Inject
     Vertx vertx;
 
+    @Inject
+    Metrics metrics;
+
     @Override
     public void onCreate(SessionID sessionID) {
         log.info("--------- onCreate ---------");
+    }
+
+    @Scheduled(every="5s")     
+    void showMetrics() {
+        metrics.logMetrics();
     }
 
     @Override
@@ -66,7 +74,7 @@ public class ServerApplicationAdapter implements quickfix.Application {
         if("thread".equals(executionMode)) {
             KafkaConsumer<String, String> consumer = buildConsumer(sessionID.toString());
             consumer.subscribe(Collections.singleton(kafkaTopic));
-            new Thread( new ConsumerRunnable(sessionID, consumer)).start();
+            new Thread( new ConsumerRunnable(sessionID, consumer, metrics)).start();
         }else {
             io.vertx.kafka.client.consumer.KafkaConsumer<String, String> consumerVertx = buildConsumerVertx(
                 sessionID.toString());
@@ -74,7 +82,7 @@ public class ServerApplicationAdapter implements quickfix.Application {
             consumerVertx.subscribe(kafkaTopic).onSuccess(v -> {
 
                 vertx.setPeriodic(10, timerId -> consumerVertx.poll(Duration.ofMillis(100))
-                    .onSuccess(new VertxHandler(sessionID, timerId)).onFailure(cause -> {
+                    .onSuccess(new VertxHandler(sessionID, timerId, metrics)).onFailure(cause -> {
                         log.info("Erro", cause);
                         // Stop polling if something went wrong
                         vertx.cancelTimer(timerId);
@@ -82,8 +90,6 @@ public class ServerApplicationAdapter implements quickfix.Application {
                 );
             });
         }
-        
-
     }
 
     private KafkaConsumer<String, String> buildConsumer(String session) {
@@ -155,17 +161,18 @@ public class ServerApplicationAdapter implements quickfix.Application {
 
     }
 
-
     static class ConsumerRunnable implements Runnable {
 
         private SessionID sessionID;
         private Session session;
         private KafkaConsumer<String, String> consumer;
+        private Metrics m;
 
-        public ConsumerRunnable(SessionID sessionID, KafkaConsumer<String, String> consumer) {
+        public ConsumerRunnable(SessionID sessionID, KafkaConsumer<String, String> consumer, Metrics m) {
             this.sessionID = sessionID;
             this.session = Session.lookupSession(sessionID);
             this.consumer = consumer;
+            this.m = m;
         }
 
         @Override
@@ -175,9 +182,9 @@ public class ServerApplicationAdapter implements quickfix.Application {
                 final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
                 for (ConsumerRecord<String, String> record : consumerRecords) {
 
-                    log.info("Polled Record:");
-                    log.info("\t record.key: " + record.key() + " record.value: " + record.value());
-                    log.info("\t record.partition: " + record.partition() + " record.offset: " + record.offset());
+                    // log.info("Polled Record:");
+                    // log.info("\t record.key: " + record.key() + " record.value: " + record.value());
+                    // log.info("\t record.partition: " + record.partition() + " record.offset: " + record.offset());
 
                     try {
                         Message fixMessage = new Message();
@@ -185,7 +192,7 @@ public class ServerApplicationAdapter implements quickfix.Application {
                         Session.sendToTarget(fixMessage, sessionID);
 
                         // add this message metrics
-                        Metrics.getInstance().addMetric(sessionID.toString(), fixMessage.getUtcTimeStamp(60), java.time.LocalDateTime.now());
+                        m.addMetric(sessionID.toString(), fixMessage.getUtcTimeStamp(60), java.time.LocalDateTime.now());
                     } catch (InvalidMessage e) {
                         log.info("Erro ao enviar", e);
                     } catch (SessionNotFound e) {
@@ -209,34 +216,37 @@ public class ServerApplicationAdapter implements quickfix.Application {
         private final Session session;
         private final long timerId;
         private final SessionID sessionID;
+        private final Metrics m;
 
-        public VertxHandler(SessionID sessionID, long timerId) {
+        public VertxHandler(SessionID sessionID, long timerId, Metrics m) {
             this.sessionID = sessionID;
             this.session = Session.lookupSession(sessionID);
             this.timerId = timerId;
+            this.m = m;
         }
 
         @Override
         public void handle(KafkaConsumerRecords<String, String> records) {
             for (int i = 0; i < records.size(); i++) {
                 KafkaConsumerRecord<String, String> record = records.recordAt(i);
-                System.out.println("key=" + record.key() + ",value=" + record.value() + ",partition="
-                        + record.partition() + ",offset=" + record.offset());
-                log.info("Polled Record:");
-                log.info("\t record.key: " + record.key() + " record.value: " + record.value());
-                log.info("\t record.partition: " + record.partition() + " record.offset: " + record.offset());
+                
+                // log.info("Polled Record:");
+                // log.info("\t record.key: " + record.key() + " record.value: " + record.value());
+                // log.info("\t record.partition: " + record.partition() + " record.offset: " + record.offset());
 
                 try {
                     Message fixMessage = new Message();
                     fixMessage.fromString(record.value(), null, false);
                     Session.sendToTarget(fixMessage, sessionID);
+
+                    // add this message metrics
+                    m.addMetric(sessionID.toString(), fixMessage.getUtcTimeStamp(60), java.time.LocalDateTime.now());
                 } catch (InvalidMessage e) {
                     log.debug("Erro", e);
                 } catch (SessionNotFound e) {
                     log.debug("Erro", e);
                     break;
                 }
-
             }
             if (!session.isLoggedOn()) {
                 vertx.cancelTimer(timerId);
@@ -244,6 +254,5 @@ public class ServerApplicationAdapter implements quickfix.Application {
         }
 
     }
-
 
 }

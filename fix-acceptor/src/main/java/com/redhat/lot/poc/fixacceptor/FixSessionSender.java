@@ -10,6 +10,11 @@ import quickfix.SessionID;
 import quickfix.SessionNotFound;
 import quickfix.StringField;
 
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
+
+
 public class FixSessionSender implements Runnable {
 
 	private int currentIndex = 0;
@@ -17,18 +22,24 @@ public class FixSessionSender implements Runnable {
 	CircularList list = CircularList.getInstance();
 	private SessionID sessionID;
 	final String dif = "Diferencia msg ";
+
 	private double cant_messages=0;
 	private boolean active = true;
 	
+	private KafkaProducer<String, String> producer;
 	
-
 	public FixSessionSender(SessionID sessionID) {
-		super();
 		this.sessionID = sessionID;
 		this.currentIndex = CircularList.getInstance().getIndex();
 		this.currentLoop = CircularList.getInstance().getCurrentLoop();
 		System.out.println(">>> FixSessionSender creado para sessionID " + sessionID.getSenderCompID());
+
+	public FixSessionSender(SessionID sessionID, KafkaProducer<String, String> producer) {
+		this.sessionID = sessionID;
+		this.producer = producer;
+		System.out.println(">>> FixSessionSender created with SessionID " + sessionID.getSenderCompID() + " and Kafka Producer");
 	}
+
 
 	@Override
 	public void run() {
@@ -42,10 +53,7 @@ public class FixSessionSender implements Runnable {
 			try {
 
 				if (estoy_sincronizado_con_la_lista_circular()) 	{
-					
-					//Message msg = list.get(currentIndex);
 					String msg = list.getStr(currentIndex);
-	//				cant_messages++;
 					
 					if (msg != null) {
 						fixMessage = new Message();
@@ -60,7 +68,7 @@ public class FixSessionSender implements Runnable {
 						//System.out.println("Sender CID: "+sessionID.getSenderCompID()+", Target CID: "+sessionID.getTargetCompID());
 						
 						Session.sendToTarget(fixMessage, sessionID);
-						
+            
 						try { 
 
 							
@@ -72,20 +80,16 @@ public class FixSessionSender implements Runnable {
 						}
 						
 						
-						
 					}
 					
 					avanzar_punteros_a_lista();
-					
-					
 				} else if (ya_consumi_todos_los_mensajes_de_la_lista()) {
-					
-					
 					Thread.currentThread().sleep(1);
 
 //					System.out.println("cant messages para " + sessionID.toString() + " = " + cant_messages);
 					
 				} else if (!estoy_sincronizado_con_la_lista_circular()){
+          
 					System.out.println("Perdi por más de 1 vuelta!!! currentLoop=" + currentLoop + " lista "
 							+ list.getCurrentLoop() + ", current index=" + currentIndex + ", lista index=" + list.getIndex() );
 					//break;
@@ -96,7 +100,16 @@ public class FixSessionSender implements Runnable {
 			}
 		}
 
+	}
 
+	private boolean shouldSendToKafka(){
+		if (this.producer != null){
+			System.out.println("-------> Will send to Kafka");
+			return true;
+		}else{
+			System.out.println("-------> Will not send to Kafka");
+			return false;
+		}
 	}
 	
 

@@ -6,6 +6,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import quickfix.ConfigError;
 import quickfix.DefaultMessageFactory;
 import quickfix.FieldConvertError;
@@ -25,12 +27,14 @@ public class FixAcceptorConfig {
 	@Inject
 	ServerApplicationAdapter application;
 
+	@ConfigProperty(name = "quickfixj.server.config")
+    String serverConfig;
 
 	@Produces
 	public ThreadedSocketAcceptor threadedSocketAcceptor() {
 		ThreadedSocketAcceptor acceptor = null;
 		try {
-			SessionSettings settings = new SessionSettings(FixAcceptorConfig.class.getResourceAsStream("executor.cfg"));
+			SessionSettings settings = new SessionSettings(FixAcceptorConfig.class.getResourceAsStream(serverConfig));
 			MessageStoreFactory storeFactory = new FileStoreFactory(settings);
 			LogFactory logFactory = new FileLogFactory(settings);
 			MessageFactory messageFactory = new DefaultMessageFactory();

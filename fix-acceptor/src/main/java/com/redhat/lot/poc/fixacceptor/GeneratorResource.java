@@ -6,16 +6,22 @@ import java.util.TimerTask;
 import javax.inject.Inject;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.eclipse.microprofile.context.ManagedExecutor;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import com.redhat.lot.poc.fixacceptor.MarketDataGenerator;
 
 
 
@@ -30,17 +36,21 @@ public class GeneratorResource {
     
     MarketDataGenerator generator;
 
+
     //TODO Cambiar este parametro estatico a un properties o algo asi
     @Channel("marketdata")
     @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 500000)
     Emitter<String> emitter;
     
     Timer timer;
+  
+	@Inject
+	KafkaProducer<String, String> producer;
+
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public String generate(
-
     		@QueryParam(value = "duration") @DefaultValue(value = "10000") Integer duration,
     		@QueryParam(value = "cantmsgs") @DefaultValue(value = "1") Integer cantmsgs,
     		@QueryParam(value = "isKafka") @DefaultValue(value = "false") Boolean isKafka
@@ -49,31 +59,23 @@ public class GeneratorResource {
     	log.info((">>> Generating: Duration["+duration+"], Cant_msgs_ms["+cantmsgs+"], IsKafka["+isKafka.toString()+"]"));
         
     	 generator = new MarketDataGenerator(cantmsgs,duration,isKafka);
-		 generator.setPlay(true);
-    	if(isKafka) {
-    
+		  generator.setPlay(true);
+    	
+      if(isKafka) {
     		generator.setEmitter(emitter);
     	}
 
-    		
-    		
-    	
+		 Thread t = new Thread(generator);
+	   t.start();
 
-		Thread t = new Thread(generator);
-	        t.start();
+    generateLogs();
 
-    	generateLogs();
-
-        return "{'status' : 'STARTED',  'duration: '"+duration+"','cantmsgs: '"+cantmsgs+"', 'toKafka' : '"+isKafka.toString()+"'}";
+    return "{'status' : 'STARTED',  'duration: '"+duration+"','cantmsgs: '"+cantmsgs+"', 'toKafka' : '"+isKafka.toString()+"'}";
 	}
 
-	@GET
-	@Path("/kafka")
-	@Produces(MediaType.TEXT_PLAIN)
-	public String publishToKafka() {
-		emitter.send(MarketDataGenerator.generateMessage().toString());
-
-		return "{status:OK}";
+	@POST
+	public long publishToKafka(@QueryParam("key") String key, @QueryParam("value") String value) throws InterruptedException, ExecutionException, TimeoutException {
+		return producer.send(new ProducerRecord<>("test", "{status:OK}")).get(5, TimeUnit.SECONDS).offset();
 	}
 
 	@GET
@@ -101,4 +103,3 @@ public class GeneratorResource {
 	}
   
 }
-

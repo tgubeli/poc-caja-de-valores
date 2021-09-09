@@ -6,25 +6,19 @@ import java.util.Date;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
 
-import quickfix.DoubleField;
+
 import quickfix.InvalidMessage;
 import quickfix.Message;
 import quickfix.field.TransactTime;
 
-@ApplicationScoped
 public class MarketDataGenerator implements Runnable {
-
-	@Inject
-	Logger log;
 
 	//private final static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
     //private static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=changedate10=015";
 	private static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=changedate10=015";
 
-	
 	private String fixDatePattern = "YYYYMMdd-HH:mm:ss.SSS";
 	private static SimpleDateFormat simpleDateFormat;
 	private boolean play = true;
@@ -34,6 +28,7 @@ public class MarketDataGenerator implements Runnable {
 	private long initPerSecondTime;
 	private long currenttime;
 	private long totalMessagesGenerated;
+
 	private int errors = 0;
 	private int time_left=0;
 	private String msg2;
@@ -83,6 +78,7 @@ public class MarketDataGenerator implements Runnable {
 		this.simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 	}
 
+
 	public MarketDataGenerator(int quantity, int duration, boolean isKafka) {
 		this();
 
@@ -90,25 +86,20 @@ public class MarketDataGenerator implements Runnable {
 		this.duration = duration;
 		this.isKafka = isKafka;
 
+  }
 		
-		
-	}
-	
-
-	
-	
 
 	@Override
 	public void run() {
 		
-
 		totalMessagesGenerated = 0;
 		
 		// End Time = Time until the thread will be executed
-		endTime = System.nanoTime() + (duration*1000000l);
-		currenttime = System.nanoTime();
+		endTime = System.currentTimeMillis() + duration;
+		currenttime = System.currentTimeMillis();
 		
 		System.out.println(">>> Arrancando... Generando " + quantity+ "] mensajes  Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
+
 		
 		simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 		
@@ -127,6 +118,7 @@ public class MarketDataGenerator implements Runnable {
 		msg2 = MarketDataGenerator.generateStringMessage(); //all with the same timestamp in each cycle
 		i = 0;
 		initPerSecondTime = System.nanoTime();
+
 		for (i = 0; i < (quantity); i++) {
 			
 			if (!isKafka) {
@@ -145,9 +137,6 @@ public class MarketDataGenerator implements Runnable {
 		}
 		
 	}
-
-
-
 
 	public static Message generateMessage(){
 		Message fixMessage = new Message();
@@ -179,8 +168,6 @@ public class MarketDataGenerator implements Runnable {
 		return strFixMessage;
 	}
 	
-
-
 	
 	public void stop() {
 		
@@ -191,6 +178,41 @@ public class MarketDataGenerator implements Runnable {
 		Metrics.getInstance().logMetrics();
 		
 		play = false;
+	}
+
+	//end time execution, since initTime (inittime + (duration in milliseconds))
+	private long endTime;
+
+	public void setInterval(int interval) {
+		this.interval = interval;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+
+	public void setPlay(boolean play) {
+		this.play = play;
+	}
+	
+	public int getChunks() {
+		return chunks;
+	}
+
+	public void setChunks(int chunks) {
+		this.chunks = chunks;
+	}
+
+	public long getDuration() {
+		return duration;
+	}
+
+	public void setDuration(long duration) {
+		this.duration = duration;
+	}
+
+	public int getInterval() {
+		return interval;
 	}
 	
 
