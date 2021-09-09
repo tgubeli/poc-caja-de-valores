@@ -62,7 +62,7 @@ public class FixSessionSender implements Runnable {
 						Session.sendToTarget(fixMessage, sessionID);
 						
 						try { 
-							LocalDateTime ldt = fixMessage.getUtcTimeStamp(60);
+
 							
 							// add this message metrics
 							Metrics.getInstance().addMetric(sessionID.toString(), fixMessage.getUtcTimeStamp(60), java.time.LocalDateTime.now());
