@@ -5,13 +5,20 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jboss.logging.Logger;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 
 @ApplicationScoped
 public class Metrics {
 
 	private Map<String, double[]> metricsPerSession = new HashMap<String, double[]>(130);
+	
+	@Inject
+	Logger log;
 	
 	/**
 	 * Metrics per millisecond ranges, there are 15 ranges with a counter for each one:
@@ -111,15 +118,16 @@ public class Metrics {
 			i=i+1;
 		}
 		
-		System.out.println(">>>>> TOTAL METRICS: max["+maxFinal+"], min["+minFinal+"], med["+(mediaFinal/i)+"]");
-		
-		// Metrics by time range
-		System.out.println("\t >>>>> METRICS BY TIME RANGE:");
-		for(int j =0; j < metricsRanges.length; j++) {
-			System.out.println("\t\t Entre: "+metricsRanges[j][0]+"ms y "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
+		if (maxFinal != 0 || minFinal != 0 || mediaFinal != 0){
+			log.info("TOTAL METRICS: max["+maxFinal+"], min["+minFinal+"], med["+(mediaFinal/i)+"]");
+
+			log.info("\t METRICS BY TIME RANGE:");
+			for(int j =0; j < metricsRanges.length; j++) {
+				if (metricsPerRangeTemp[j] != 0){
+					log.info("\t\t "+metricsRanges[j][0]+"ms - "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
+				}
+			}
 		}
-		
-		
 		
 	}
 	
@@ -159,7 +167,10 @@ public class Metrics {
 		metricsRanges[13][1] = 1000;
 		metricsRanges[14][0] = 1001;
 		metricsRanges[14][1] = 999999999;
-		
+	}
+
+	public void remove(String sessionID) {
+		metricsPerSession.remove(sessionID);
 	}
 	
 }

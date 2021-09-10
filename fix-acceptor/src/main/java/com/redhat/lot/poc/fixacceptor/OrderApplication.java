@@ -16,7 +16,8 @@ import quickfix.SessionID;
 import quickfix.UnsupportedMessageType;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import io.quarkus.scheduler.Scheduled;
 
 @ApplicationScoped
 public class OrderApplication implements quickfix.Application {
@@ -24,14 +25,16 @@ public class OrderApplication implements quickfix.Application {
     @Inject
     Logger log;
 
-    @ConfigProperty(name = "sendtokafka")
-    Boolean sendToKafka;
-
     @Inject
     KafkaProducer<String, String> producer;
 
     @Inject
     Metrics metrics;
+
+    @Scheduled(every="5s")     
+    void showMetrics() {
+        metrics.logMetrics();
+    }
 
     private static HashMap<String, FixSessionSender> hashFixSessionSender = new HashMap<>();
     
@@ -51,12 +54,7 @@ public class OrderApplication implements quickfix.Application {
 
     @Override
 	public void onLogon(SessionID sessionID) {
-        FixSessionSender sender; 
-        if (sendToKafka){
-            sender = new FixSessionSender(sessionID, this.producer, metrics);
-        }else{
-            sender = new FixSessionSender(sessionID, metrics);
-        }
+        FixSessionSender sender = new FixSessionSender(sessionID, metrics);
 
     	hashFixSessionSender.put(sessionID.toString(), sender);
     	Thread thread = new Thread(sender);
@@ -67,9 +65,9 @@ public class OrderApplication implements quickfix.Application {
 
     @Override
 	public void onLogout(SessionID sessionID) {
-    	//FIXME remove localEventBus consumer
     	log.info("OrderApplication.onLogout() "+sessionID);
-    	//TODO Destruir el thread
+        hashFixSessionSender.get(sessionID.toString()).stop();
+    	hashFixSessionSender.remove(sessionID.toString());
     }
 
     @Override

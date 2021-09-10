@@ -3,11 +3,10 @@ package com.redhat.lot.poc.fixacceptor;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-
-import org.jboss.logging.Logger;
-
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import quickfix.InvalidMessage;
 import quickfix.Message;
@@ -15,34 +14,36 @@ import quickfix.field.TransactTime;
 
 public class MarketDataGenerator implements Runnable {
 
-	//private final static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=20210715-21:06:54.41610=015";
+	private final static Logger log = LoggerFactory.getLogger(MarketDataGenerator.class);
 	private static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=changedate10=015";
+
 	private String fixDatePattern = "YYYYMMdd-HH:mm:ss.SSS";
 	private static SimpleDateFormat simpleDateFormat;
 	private boolean play = true;
 	private int quantity = 100;
-	private int interval = 1000;
-	private long time;
+
 	private long duration;
-	private int chunks=1;
 	private long initPerSecondTime;
 	private long currenttime;
 	private long totalMessagesGenerated;
-	private int cycles;
-	private static MarketDataGenerator instance;
-	private String msg2;
-	private int i;
+
 	private int errors = 0;
 	private int time_left=0;
+	private String msg2;
+	private int i;
+	private boolean isKafka = false;
 
-	public MarketDataGenerator(int quantity, int interval, int duration, int chunks) {
-		this.interval = interval;
+	private KafkaProducer<String, String> producer;
+	private Metrics metrics;
+
+	private static MarketDataGenerator instance;
+
+	public MarketDataGenerator(int quantity, int duration, boolean isKafka, Metrics metrics) {
 		this.quantity = quantity;
 		this.duration = duration;
-		this.chunks = chunks;
-		
-		MarketDataGenerator.simpleDateFormat = new SimpleDateFormat(fixDatePattern);
-	}
+		this.isKafka = isKafka;
+		this.metrics = metrics;
+  	}
 	
 	public static MarketDataGenerator getInstance() {
 		if(instance == null)
@@ -61,64 +62,16 @@ public class MarketDataGenerator implements Runnable {
 		endTime = System.currentTimeMillis() + duration;
 		currenttime = System.currentTimeMillis();
 		
-		System.out.println(">>> Arrancando... Generando " + quantity+ " mensajes cada 1 ms Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
-	
+		log.info(">>> Arrancando... Generando " + quantity+ "] mensajes  Durante "+duration+" ms, NanoNow: "+currenttime+", endTime: "+endTime);
 		
 		simpleDateFormat = new SimpleDateFormat(fixDatePattern);
 		
 		try {
 			while (play) {
 				generateMarketData2();
-				currenttime = System.currentTimeMillis();
-				if(currenttime>=endTime) {
-					//System.out.println((">>> Time is up! currentTime: "+currenttime+" >= "+endTime));
-					stop();
-				}
 			}
 		} catch (InterruptedException ie) {
 			ie.printStackTrace();
-		}
-
-	}
-
-	public void generateMarketData() {
-		
-		cycles = cycles + 1;
-		
-		initPerSecondTime = System.nanoTime();
-		
-		long tiempo_restante_loop = 0;
-
-		time = System.nanoTime();
-
-		int i = 1;
-		for (i = 1; i <= (quantity/chunks); i++) {
-			
-			CircularList.getInstance().insert(MarketDataGenerator.generateStringMessage());
-			
-			if (System.nanoTime() - time >= (interval/chunks*1000000)) {
-				System.out.println(
-						"**ATENCION!!** Tiempo excedido para ciclo generación de market data en el intervalo. Generado "
-								+ i + " en "+(System.nanoTime() - time)+" ns");
-				break;
-			}
-
-		}
-
-		
-		//TODO ver como calcular esto con nanosegundos
-		tiempo_restante_loop = (interval/chunks*1000000) - (initPerSecondTime - currenttime);
-		if (tiempo_restante_loop > 0) {
-			esperar(tiempo_restante_loop);
-		}
-		
-		//System.out.println((">>> Generado " + i + " mensajes en "+(interval/chunks*1000000)+" ns"));
-		
-		totalMessagesGenerated = totalMessagesGenerated + i;
-		currenttime = System.nanoTime();
-		if(currenttime>=endTime) {
-			//System.out.println((">>> Time is up! currentTime: "+currenttime+" >= "+endTime));
-			stop();
 		}
 
 	}
@@ -128,11 +81,18 @@ public class MarketDataGenerator implements Runnable {
 		msg2 = MarketDataGenerator.generateStringMessage(); //all with the same timestamp in each cycle
 		i = 0;
 		initPerSecondTime = System.nanoTime();
+
 		for (i = 0; i < (quantity); i++) {
 			
-			CircularList.getInstance().insert(msg2);
+			if (isKafka) {
+				producer.send(new ProducerRecord<>("marketdata", msg2));
+			} else {
+				CircularList.getInstance().insert(msg2);
+			}
 		}
+		
 		totalMessagesGenerated = totalMessagesGenerated + i;
+		System.out.printf("> Messages sent to Kafka: %d\r", totalMessagesGenerated);
 		time_left = 1000000 - (int) (System.nanoTime() - initPerSecondTime) ;
 		if (time_left < 0) {
 			//means that took more than 1 milisecond
@@ -142,6 +102,7 @@ public class MarketDataGenerator implements Runnable {
 		}
 		
 	}
+
 
 	public static Message generateMessage(){
 		Message fixMessage = new Message();
@@ -163,9 +124,7 @@ public class MarketDataGenerator implements Runnable {
 		String strFixMessage = msg;//"8=FIX.4.49=12835=D34=449=STUN52=20210901-00:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=0";
 
 		try {
-			
 			strFixMessage = strFixMessage.replace("changedate", simpleDateFormat.format(new Date()));
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -183,10 +142,7 @@ public class MarketDataGenerator implements Runnable {
 			}
 			nanos = (int) tiempo_restante_loop % 1000000;
 			
-			
-			Thread.currentThread();
-			Thread.sleep(tiempo_restante_loop_milis, nanos);
-			
+			Thread.currentThread().sleep(tiempo_restante_loop_milis, nanos);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -194,20 +150,16 @@ public class MarketDataGenerator implements Runnable {
 	
 	public void stop() {
 		
-		System.out.println((">>> Time is up ("+duration+" ms)! Stopping thread..."));
-		System.out.println((">>> Total Messages Generated... ("+totalMessagesGenerated+")"));
+		log.info((">>> Time is up ("+duration+" ms)! Stopping thread..."));
+		log.info((">>> Total Messages Generated... ("+totalMessagesGenerated+")"));
 		
-		Metrics.getInstance().logMetrics();
+		metrics.logMetrics();
 		
 		play = false;
 	}
 
 	//end time execution, since initTime (inittime + (duration in milliseconds))
 	private long endTime;
-
-	public void setInterval(int interval) {
-		this.interval = interval;
-	}
 
 	public void setQuantity(int quantity) {
 		this.quantity = quantity;
@@ -217,14 +169,6 @@ public class MarketDataGenerator implements Runnable {
 		this.play = play;
 	}
 	
-	public int getChunks() {
-		return chunks;
-	}
-
-	public void setChunks(int chunks) {
-		this.chunks = chunks;
-	}
-
 	public long getDuration() {
 		return duration;
 	}
@@ -233,9 +177,7 @@ public class MarketDataGenerator implements Runnable {
 		this.duration = duration;
 	}
 
-	public int getInterval() {
-		return interval;
+	public void setKafkaProducer(KafkaProducer<String, String> p){
+		this.producer = p;
 	}
-	
-
 }

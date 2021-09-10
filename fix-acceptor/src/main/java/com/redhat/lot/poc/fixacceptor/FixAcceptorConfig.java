@@ -14,8 +14,6 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import static quickfix.Acceptor.SETTING_ACCEPTOR_TEMPLATE;
-import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_ADDRESS;
-import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_PORT;
 
 import quickfix.mina.acceptor.DynamicAcceptorSessionProvider;
 import quickfix.mina.acceptor.DynamicAcceptorSessionProvider.TemplateMapping;
@@ -23,8 +21,6 @@ import quickfix.mina.acceptor.DynamicAcceptorSessionProvider.TemplateMapping;
 import quickfix.ConfigError;
 import quickfix.DefaultMessageFactory;
 import quickfix.FieldConvertError;
-import quickfix.FileLogFactory;
-import quickfix.FileStoreFactory;
 import quickfix.LogFactory;
 import quickfix.MemoryStoreFactory;
 import quickfix.MessageFactory;

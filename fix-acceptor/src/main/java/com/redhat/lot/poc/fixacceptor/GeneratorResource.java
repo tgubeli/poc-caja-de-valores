@@ -33,30 +33,34 @@ public class GeneratorResource {
 	@Inject
 	KafkaProducer<String, String> producer;
 
-    @GET
+	MarketDataGenerator generator;
+
+	@Inject
+	Metrics metrics;
+
+	@GET
     @Produces(MediaType.APPLICATION_JSON)
     public String generate(
-    		@QueryParam(value = "sizePerThread") @DefaultValue(value = "10") Integer size, 
-    		@QueryParam(value = "threads") @DefaultValue(value = "1") Integer threads,
-    		@QueryParam(value = "interval") @DefaultValue(value = "1000") Integer interval,
     		@QueryParam(value = "duration") @DefaultValue(value = "10000") Integer duration,
-    		@QueryParam(value = "chunks") @DefaultValue(value = "1") Integer chunks
+    		@QueryParam(value = "cantmsgs") @DefaultValue(value = "1") Integer cantmsgs,
+    		@QueryParam(value = "isKafka") @DefaultValue(value = "false") Boolean isKafka
     		) {
         
-    	log.info((">>> Generating: Threads["+threads+"], MessagesPerThread["+size+"], Interval["+interval+"], Duration["+duration+"], Chunks["+chunks+"]"));
+    	log.info((">>> Generating: Duration["+duration+"], Cant_msgs_ms["+cantmsgs+"], IsKafka["+isKafka.toString()+"]"));
         
-    	MarketDataGenerator generator = MarketDataGenerator.getInstance();
-		generator.setQuantity(size);
-		generator.setInterval(interval);
-		generator.setDuration(duration);
-		generator.setChunks(chunks);
+		generator = new MarketDataGenerator(cantmsgs, duration, isKafka, metrics);
 		generator.setPlay(true);
+    	
+		if(isKafka) {
+			generator.setKafkaProducer(producer);
+		}
 
 		Thread t = new Thread(generator);
 		t.start();
 
-        return "{'status' : 'STARTED', 'threads' : '"+threads+"', 'messagesPerThread' : '"+size+"', 'interval' : '"+interval+"', 'duration: '"+duration+"','chunks: '"+chunks+"}";
+    	return "{'status' : 'STARTED',  'duration: '"+duration+"','cantmsgs: '"+cantmsgs+"', 'toKafka' : '"+isKafka.toString()+"'}";
 	}
+
 
 	@POST
 	public long publishToKafka(@QueryParam("key") String key, @QueryParam("value") String value) throws InterruptedException, ExecutionException, TimeoutException {
@@ -67,8 +71,8 @@ public class GeneratorResource {
 	@Path("/stop")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String stop() {
-		MarketDataGenerator.getInstance().stop();
+		generator.stop();
 		return "{'status' : 'STOPED'}";
 	}
-  
+	
 }

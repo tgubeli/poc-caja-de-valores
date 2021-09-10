@@ -8,11 +8,6 @@ import quickfix.SessionID;
 import quickfix.SessionNotFound;
 import quickfix.StringField;
 
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-
-
-
 public class FixSessionSender implements Runnable {
 
 	private int currentIndex = 0;
@@ -20,21 +15,15 @@ public class FixSessionSender implements Runnable {
 	CircularList list = CircularList.getInstance();
 	private SessionID sessionID;
 	final String dif = "Diferencia msg ";
-	private KafkaProducer<String, String> producer;
 	Metrics metrics;
+
+	private boolean active = true;
 	
 	public FixSessionSender(SessionID sessionID, Metrics metrics) {
 		this.sessionID = sessionID;
 		this.metrics = metrics;
 		System.out.println(">>> FixSessionSender created with SessionID " + sessionID.getSenderCompID());
 	}
-
-	public FixSessionSender(SessionID sessionID, KafkaProducer<String, String> producer, Metrics metrics) {
-		this.sessionID = sessionID;
-		this.producer = producer;
-		this.metrics = metrics;
-	}
-	
 
 	@Override
 	public void run() {
@@ -63,9 +52,6 @@ public class FixSessionSender implements Runnable {
 
 					// Should send to both (Kafka and circular list) or just one ?
 					Session.sendToTarget(fixMessage, sessionID);
-					if (shouldSendToKafka()){
-						producer.send(new ProducerRecord<>("marketdata", fixMessage.toString()));
-					}
 					
 					avanzar_punteros_a_lista();
 				} else if (ya_consumi_todos_los_mensajes_de_la_lista()) {
@@ -82,15 +68,6 @@ public class FixSessionSender implements Runnable {
 		}
 
 	}
-
-	private boolean shouldSendToKafka(){
-		if (this.producer != null){
-			return true;
-		}else{
-			return false;
-		}
-	}
-	
 
 	private boolean ya_consumi_todos_los_mensajes_de_la_lista() {
 		return (currentLoop == list.getCurrentLoop()) && (currentIndex == list.getIndex());
@@ -109,5 +86,21 @@ public class FixSessionSender implements Runnable {
 		return (currentLoop == list.getCurrentLoop()) && (currentIndex < list.getIndex()) // estoy misma vuelta 
 				|| ((currentLoop == list.getCurrentLoop() - 1 && currentIndex >= list.getIndex())); //estoy 1 vuela antes
 	}
+
+	public void stop() {
+		setActive(false);
+		metrics.remove(sessionID.toString());
+		System.out.println("Stopped FIXSessionSender for " + sessionID.toString());
+
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+
 
 }
