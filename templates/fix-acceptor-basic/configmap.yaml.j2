@@ -1,0 +1,10 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: fix-acceptor-basic-config
+  managedFields:
+    - manager: kubectl-create
+      operation: Update
+      apiVersion: v1
+data:
+  application.properties: |-

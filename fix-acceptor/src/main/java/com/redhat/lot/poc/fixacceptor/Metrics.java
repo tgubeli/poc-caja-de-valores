@@ -1,7 +1,6 @@
 package com.redhat.lot.poc.fixacceptor;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
@@ -79,6 +78,7 @@ public class Metrics {
 	}
 	
 	public void logMetrics() {
+
 		// copy all metrics in a new map
 		Map<String, double[]> hashMetricsTemp = new HashMap<String, double[]>(130);
 		hashMetricsTemp = metricsPerSession;
@@ -128,7 +128,7 @@ public class Metrics {
 	 * {0-1, 2-3, 4-5, 6-7, 8-9, 10-15, 16-30, 31-90, 91-150, 151-200, 201-300, 301-400, 401-600, 601-1000, 1001-infinite}
 	 * Totalized metrics will be group here
 	 */
-	private static void setRanges() {
+	private void setRanges() {
 		metricsRanges[0][0] = 0;
 		metricsRanges[0][1] = 1;
 		metricsRanges[1][0] = 2;

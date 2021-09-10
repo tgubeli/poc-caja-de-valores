@@ -1,27 +1,19 @@
 package com.redhat.lot.poc.fixacceptor;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
 
-import quickfix.ConfigError;
 import quickfix.DoNotSend;
-import quickfix.FieldConvertError;
 import quickfix.FieldNotFound;
 import quickfix.IncorrectDataFormat;
 import quickfix.IncorrectTagValue;
 import quickfix.RejectLogon;
-import quickfix.Session;
 import quickfix.SessionID;
-import quickfix.SessionSettings;
 import quickfix.UnsupportedMessageType;
-import quickfix.field.OrdType;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;

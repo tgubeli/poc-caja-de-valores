@@ -1,0 +1,1 @@
+Main-Class: com.redhat.lot.poc.Main

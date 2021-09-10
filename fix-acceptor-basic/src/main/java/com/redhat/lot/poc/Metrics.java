@@ -1,27 +1,20 @@
-package com.redhat.lot.poc.fixacceptor;
+package com.redhat.lot.poc;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
-import org.jboss.logging.Logger;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-
-@ApplicationScoped
 public class Metrics {
 
+	private static Metrics instance;
+	
 	private Map<String, double[]> metricsPerSession = new HashMap<String, double[]>(130);
-
-	@Inject
-	Logger log;
-
-	@PostConstruct
-	public void onInit(){
-		setRanges();
-	}
+	
+	private long cant_messages=0;
+	
+	private long time = System.currentTimeMillis()-1;
 	
 	/**
 	 * Metrics per millisecond ranges, there are 15 ranges with a counter for each one:
@@ -29,7 +22,17 @@ public class Metrics {
 	 * Totalized metrics will be group here
 	 */
 	private int[] metricsPerRange = new int[15];
-	private int[][] metricsRanges = new int[15][2];
+	private static int[][] metricsRanges = new int[15][2];
+	
+	
+	public static Metrics getInstance() {
+		if(instance==null) {
+			instance = new Metrics();
+			setRanges();
+		}
+		return instance;
+	}
+	
 	
 	
 	/**
@@ -45,6 +48,8 @@ public class Metrics {
 		long endMilis = endDateTime.atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
 		
 		double diferenciaTimestamp = endMilis - initMilis;
+		
+		// System.out.println("Milis: Init: "+initMilis+", End: "+endMilis+", Dif: "+diferenciaTimestamp);
 		
 		if(!metricsPerSession.containsKey(sessionID)) {
 			double[] valores = {diferenciaTimestamp,diferenciaTimestamp,diferenciaTimestamp,1d}; // {min,max,sumaTimestamp, cantidadMensajes}
@@ -66,6 +71,7 @@ public class Metrics {
 		}
 		
 		addRangeMetricCount((int) diferenciaTimestamp);
+		cant_messages++;
 			
 	}
 	
@@ -98,11 +104,13 @@ public class Metrics {
 		double minFinal = 0;
 		double mediaFinal = 0;
 		
+		
+		
 		// print/log all metrics per Session ID and collect/calculate a Total Metrics values
 		int i = 0;
 		for(double[] valoresActuales : hashMetricsTemp.values()) {
 			media = valoresActuales[2] / valoresActuales[3];
-			log.info(">>> Metrics Resume for SessionID ["+(String)sessionIds[i]+"]: max["+valoresActuales[1]+"], min["+valoresActuales[0]+"], med["+media+"]");
+			System.out.println(">>> Metrics Resume for SessionID ["+(String)sessionIds[i]+"]: max["+valoresActuales[1]+"], min["+valoresActuales[0]+"], med["+media+"]");
 			
 			if( valoresActuales[0] < minFinal)
 				minFinal = valoresActuales[0];
@@ -114,18 +122,33 @@ public class Metrics {
 			i=i+1;
 		}
 		
-		if (maxFinal != 0 || minFinal != 0 || mediaFinal != 0){
-			log.info("TOTAL METRICS: max["+maxFinal+"], min["+minFinal+"], med["+(mediaFinal/i)+"]");
-			
-			log.info("\t METRICS BY TIME RANGE:");
-			for(int j =0; j < metricsRanges.length; j++) {
-				if (metricsPerRangeTemp[j] != 0){
-					log.info("\t\t "+metricsRanges[j][0]+"ms - "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
-				}
-			}
+		long msg_per_session= 0;
+		if (sessionIds.length>0) {
+			msg_per_session= (cant_messages / sessionIds.length);
+		}
+		long elapsed_time = (System.currentTimeMillis() - time)/1000;
+		long msg_sec=0;
+		if (elapsed_time > 0 ) { 
+			msg_sec = msg_per_session / elapsed_time;
 		}
 		
+		System.out.println(">>>>> TOTAL METRICS: max[" + maxFinal + " ms], min[" + minFinal + " ms], med["
+				+ (mediaFinal / i) + "ms ], \ncant sessions " + sessionIds.length + ", cant_messages=" + cant_messages
+				+ ", msg_per_session=" + (msg_per_session)
+				+ ", msg_sec=" + msg_sec + ", elapsed_time="+ elapsed_time + " s");
+
+		// Metrics by time range
+		System.out.println("\t >>>>> METRICS BY TIME RANGE:");
+		for(int j =0; j < metricsRanges.length; j++) {
+			System.out.println("\t\t Entre: "+metricsRanges[j][0]+"ms y "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
+		}
 		
+		if (cant_messages > 0 ) {
+			System.out.println("% less than 3 ms = " + ((float) (metricsPerRangeTemp[0]+metricsPerRangeTemp[1])/cant_messages)*100);
+			System.out.println("% less than 5 ms = " + ((float) (metricsPerRangeTemp[0]+metricsPerRangeTemp[1]+metricsPerRangeTemp[2])/cant_messages)*100);
+		}
+		cant_messages=0;
+		time = System.currentTimeMillis();
 		
 	}
 	
@@ -134,7 +157,7 @@ public class Metrics {
 	 * {0-1, 2-3, 4-5, 6-7, 8-9, 10-15, 16-30, 31-90, 91-150, 151-200, 201-300, 301-400, 401-600, 601-1000, 1001-infinite}
 	 * Totalized metrics will be group here
 	 */
-	private void setRanges() {
+	private static void setRanges() {
 		metricsRanges[0][0] = 0;
 		metricsRanges[0][1] = 1;
 		metricsRanges[1][0] = 2;
@@ -165,6 +188,14 @@ public class Metrics {
 		metricsRanges[13][1] = 1000;
 		metricsRanges[14][0] = 1001;
 		metricsRanges[14][1] = 999999999;
+		
+	}
+
+
+
+	public void remove(String sessionID) {
+		metricsPerSession.remove(sessionID);
+		// TODO Auto-generated method stub
 		
 	}
 	

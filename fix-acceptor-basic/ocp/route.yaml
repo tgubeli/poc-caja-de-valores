@@ -1,0 +1,12 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: fix-acceptor-basic
+spec:
+  to:
+    kind: Service
+    name: fix-acceptor-basic
+    weight: 100
+  port:
+    targetPort: 8080
+  wildcardPolicy: None

@@ -1,0 +1,64 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: fix-iniciator
+  labels:
+    app: fix-iniciator
+    app.kubernetes.io/component: fix-iniciator
+    app.kubernetes.io/instance: fix-iniciator
+    app.kubernetes.io/name: fix-iniciator
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+    app.openshift.io/runtime: quarkus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: fix-iniciator
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        deployment: fix-iniciator
+    spec:
+      volumes:
+        - name: application-config
+          configMap:
+            name: fix-iniciator-config
+            items:
+              - key: application.properties
+                path: application.properties
+            defaultMode: 420
+      containers:
+        - name: fix-iniciator
+          image: fix-iniciator:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: JAVA_OPTS_APPEND
+              value: '-XX:MaxMetaspaceSize=1000m'
+          resources:
+            limits:
+              cpu: '1'
+              memory: 2Gi
+            requests:
+              memory: 256Mi
+          volumeMounts:
+            - name: application-config
+              readOnly: true
+              mountPath: /deployments/config
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

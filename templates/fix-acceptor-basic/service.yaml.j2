@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fix-acceptor-basic
+spec:
+  selector:
+    deployment: fix-acceptor-basic
+  ports:
+    - name: tcp
+      protocol: TCP
+      port: 8199
+      targetPort: 8199

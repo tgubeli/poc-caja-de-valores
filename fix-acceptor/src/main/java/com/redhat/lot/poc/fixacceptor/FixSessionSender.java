@@ -33,9 +33,8 @@ public class FixSessionSender implements Runnable {
 		this.sessionID = sessionID;
 		this.producer = producer;
 		this.metrics = metrics;
-		System.out.println(">>> FixSessionSender created with SessionID " + sessionID.getSenderCompID() + " and Kafka Producer");
 	}
-
+	
 
 	@Override
 	public void run() {

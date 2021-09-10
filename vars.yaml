@@ -1,0 +1,17 @@
+ocp_user: opentlc-mgr
+ocp_pass: changeme
+ocp_master_url: https://api.cluster-bb42.bb42.sandbox1891.opentlc.com:6443
+git_repo: https://github.com/tgubeli/poc-caja-de-valores
+project_name: caja-valores
+operators_project: 'openshift-marketplace'
+
+kafka_name: cv-kafka
+zk_nodes: 3
+kafka_brokers: 3
+
+topic_name: marketdata
+offsets_topic_replication_factor: 3
+transaction_state_log_replication.factor: 3
+transaction_state_log_min_isr: 2
+partitions: 130
+replicas: 2

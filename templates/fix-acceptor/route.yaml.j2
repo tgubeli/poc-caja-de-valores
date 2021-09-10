@@ -1,0 +1,13 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: fix-acceptor
+spec:
+  host: fix-acceptor-{{ project_name }}.{{ route_subdomain }}
+  to:
+    kind: Service
+    name: fix-acceptor
+    weight: 100
+  port:
+    targetPort: 8080
+  wildcardPolicy: None

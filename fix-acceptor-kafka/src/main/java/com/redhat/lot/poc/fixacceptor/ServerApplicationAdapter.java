@@ -247,7 +247,7 @@ public class ServerApplicationAdapter implements quickfix.Application {
                     log.debug("Erro", e);
                     break;
                 } catch (FieldNotFound e) {
-                    e.printStackTrace();
+                    log.debug("Erro", e);
                 }
             }
             if (!session.isLoggedOn()) {
