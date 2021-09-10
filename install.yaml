@@ -307,25 +307,8 @@
          - terminals
 
     - name: Image Change Trigger for terminals
-      shell: "oc set triggers deploy/terminal --from-image=fix-acceptor-kafka:latest -c fix-acceptor-kafka -n {{ project_name }}"
+      shell: "oc set triggers deploy/terminal --from-image=fix-iniciator:latest -c terminal -n {{ project_name }}"
       tags:
          - terminals
 
-    - name: Create 5 dummy FIX messages
-      uri:
-        url: "http://fix-acceptor-{{ project_name }}.{{ route_subdomain }}/generator?sizePerThread=5&threads=1"
-        method: GET
-        status_code: 200
-
-    - name: Total number of iniciators connected to the acceptor
-      uri:
-        url: "http://fix-acceptor-{{ project_name }}.{{ route_subdomain }}/sessions"
-        method: GET
-        status_code: 200
-        return_content: true
-      register: fix_sessions
-
-    - name: debug values
-      debug:
-        msg:
-        - "SESSIONS: {{ fix_sessions.content }}"
+    
