@@ -190,7 +190,7 @@ public class ServerApplicationAdapter implements quickfix.Application {
                     try {
                         Message fixMessage = new Message();
                         fixMessage.fromString(record.value(), null, false);
-                        Session.sendToTarget(fixMessage, sessionID);
+                        // Session.sendToTarget(fixMessage, sessionID);
 
                         // add this message metrics
                         m.addMetric(sessionID.toString(), fixMessage.getUtcTimeStamp(60), java.time.LocalDateTime.now());
