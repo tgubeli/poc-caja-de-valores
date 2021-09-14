@@ -179,7 +179,8 @@ public class ServerApplicationAdapter implements quickfix.Application {
         public void run() {
             while (session.isLoggedOn()) {
 
-                final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
+                final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofMillis(1));
+
                 for (ConsumerRecord<String, String> record : consumerRecords) {
 
                     // log.info("Polled Record:");
