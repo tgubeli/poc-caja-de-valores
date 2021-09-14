@@ -32,130 +32,130 @@
         - "console URL: {{ console_url }}"
         - "route subdomain: {{ route_subdomain }}"
 
-    # - name: create project caja-valores
-    #   k8s:
-    #     state: present
-    #     kind: Project
-    #     api_version: project.openshift.io/v1
-    #     definition:
-    #       metadata:
-    #         name: "{{ project_name }}"
-    #         annotations:
-    #           openshift.io/description: ""
-    #           openshift.io/display-name: "Caja de Valores PoC"
+    - name: create project caja-valores
+      k8s:
+        state: present
+        kind: Project
+        api_version: project.openshift.io/v1
+        definition:
+          metadata:
+            name: "{{ project_name }}"
+            annotations:
+              openshift.io/description: ""
+              openshift.io/display-name: "Caja de Valores PoC"
 
-    # - name: create project streams-grafana
-    #   k8s:
-    #     state: present
-    #     kind: Project
-    #     api_version: project.openshift.io/v1
-    #     definition:
-    #       metadata:
-    #         name: "{{ monitoring_name }}"
+    - name: create project streams-grafana
+      k8s:
+        state: present
+        kind: Project
+        api_version: project.openshift.io/v1
+        definition:
+          metadata:
+            name: "{{ monitoring_name }}"
 
-    # - name: Set admin role to caja-valores service account
-    #   shell: "oc policy add-role-to-user admin system:serviceaccount:caja-valores:default -n {{ project_name }}"
+    - name: Set admin role to caja-valores service account
+      shell: "oc policy add-role-to-user admin system:serviceaccount:{{ project_name }}:default -n {{ project_name }}"
 
-    # - name: Evaluate {{ operators_project }} namespace if not exists
-    #   k8s:
-    #     api_version: v1
-    #     kind: Namespace
-    #     name: '{{ operators_project }}'
-    #     state: present
+    - name: Evaluate {{ operators_project }} namespace if not exists
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: '{{ operators_project }}'
+        state: present
 
-    # - name: Maven Package Fix Iniciator
-    #   shell: "mvn package -DskipTests -f fix-iniciator/pom.xml"
+    - name: Maven Package Fix Iniciator
+      shell: "mvn package -DskipTests -f fix-iniciator/pom.xml"
 
-    # - name: Maven Package Fix Acceptor
-    #   shell: "mvn package -DskipTests -f fix-acceptor/pom.xml"
+    - name: Maven Package Fix Acceptor
+      shell: "mvn package -DskipTests -f fix-acceptor/pom.xml"
 
-    # - name: Maven Package Fix Acceptor Basic
-    #   shell: "mvn package -DskipTests -f fix-acceptor-basic/pom.xml"
+    - name: Maven Package Fix Acceptor Basic
+      shell: "mvn package -DskipTests -f fix-acceptor-basic/pom.xml"
 
-    # - name: Maven Package Fix Acceptor Kafka
-    #   shell: "mvn package -DskipTests -f fix-acceptor-kafka/pom.xml"
-    #   tags:
-    #      - acceptor-kafka
+    - name: Maven Package Fix Acceptor Kafka
+      shell: "mvn package -DskipTests -f fix-acceptor-kafka/pom.xml"
+      tags:
+         - acceptor-kafka
 
-    # - name: Evaluate CatalogSource for Operator Snapshot
-    #   k8s:
-    #     state: present
-    #     resource_definition: "{{ lookup('template', 'snapshot-catalogsource.yaml.j2') }}"
-    # - name: Evaluate {{ operators_project }} namespace if not exists
-    #   k8s:
-    #     api_version: v1
-    #     kind: Namespace
-    #     name: '{{ operators_project }}'
-    #     state: present
+    - name: Evaluate CatalogSource for Operator Snapshot
+      k8s:
+        state: present
+        resource_definition: "{{ lookup('template', 'snapshot-catalogsource.yaml.j2') }}"
+    - name: Evaluate {{ operators_project }} namespace if not exists
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: '{{ operators_project }}'
+        state: present
 
-    # - name: Evaluate Streams Subscription
-    #   k8s:
-    #     state: present
-    #     resource_definition: "{{ lookup('template', 'amqstreams_subscription.yaml.j2') }}"
+    - name: Evaluate Streams Subscription
+      k8s:
+        state: present
+        resource_definition: "{{ lookup('template', 'amqstreams_subscription.yaml.j2') }}"
 
-    # - name: Wait for Streams operator to install
-    #   k8s_info:
-    #     api_version: apiextensions.k8s.io/v1beta1
-    #     kind: CustomResourceDefinition
-    #     name: kafkas.kafka.strimzi.io
-    #   register: crd_streams
-    #   until: crd_streams.resources | list | length == 1
-    #   retries: 10
-    #   delay: 30
+    - name: Wait for Streams operator to install
+      k8s_info:
+        api_version: apiextensions.k8s.io/v1beta1
+        kind: CustomResourceDefinition
+        name: kafkas.kafka.strimzi.io
+      register: crd_streams
+      until: crd_streams.resources | list | length == 1
+      retries: 10
+      delay: 30
 
-    # - name: Wait for Kafka CRD
-    #   k8s_facts:
-    #     api_version: apiextensions.k8s.io/v1beta1
-    #     kind: CustomResourceDefinition
-    #     name: kafkas.kafka.strimzi.io
-    #   register: r_kafka_crd
-    #   retries: 200
-    #   delay: 10
-    #   until: r_kafka_crd.resources | list | length == 1
+    - name: Wait for Kafka CRD
+      k8s_facts:
+        api_version: apiextensions.k8s.io/v1beta1
+        kind: CustomResourceDefinition
+        name: kafkas.kafka.strimzi.io
+      register: r_kafka_crd
+      retries: 200
+      delay: 10
+      until: r_kafka_crd.resources | list | length == 1
 
-    # - name: Create AMQ Streams Cluster
-    #   k8s:
-    #     state: present
-    #     namespace: '{{ project_name }}'
-    #     resource_definition: "{{ lookup('template', 'kafka.yaml.j2') }}"
+    - name: Create AMQ Streams Cluster
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'kafka.yaml.j2') }}"
 
-    # - name: Create TOPIC
-    #   k8s:
-    #     state: present
-    #     namespace: '{{ project_name }}'
-    #     resource_definition: "{{ lookup('template', 'kafka-topic.yaml.j2') }}"
+    - name: Create TOPIC
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'kafka-topic.yaml.j2') }}"
 
-    # - name: Create Grafana Operator Group
-    #   k8s:
-    #     state: present
-    #     namespace: '{{ project_name }}'
-    #     resource_definition: "{{ lookup('template', 'monitoring/grafana-install/grafana-group.yaml.j2') }}"
-    #   tags:
-    #      - monitoring
+    - name: Create Grafana Operator Group
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'monitoring/grafana-install/grafana-group.yaml.j2') }}"
+      tags:
+         - monitoring
 
-    # - name: Create Grafana Operator
-    #   k8s:
-    #     state: present
-    #     namespace: '{{ project_name }}'
-    #     resource_definition: "{{ lookup('template', 'monitoring/grafana-install/grafana-operator.yaml.j2') }}"
-    #   tags:
-    #      - monitoring
+    - name: Create Grafana Operator
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'monitoring/grafana-install/grafana-operator.yaml.j2') }}"
+      tags:
+         - monitoring
 
-    # - name: Allow user-workloads in the Monitoring Stack
-    #   k8s:
-    #     state: present
-    #     namespace: '{{ project_name }}'
-    #     resource_definition: "{{ lookup('template', 'monitoring/cluster-monitoring.yaml.j2') }}"
-    #   tags:
-    #     - monitoring
+    - name: Allow user-workloads in the Monitoring Stack
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'monitoring/cluster-monitoring.yaml.j2') }}"
+      tags:
+        - monitoring
 
-    # - name: Strimzi pod monitoring install
-    #   k8s:
-    #     state: present
-    #     namespace: '{{ project_name }}'
-    #     resource_definition: "{{ lookup('template', 'monitoring/strimzi-pod-monitor.yaml.j2') }}"
-    #   tags:
-    #      - monitoring
+    - name: Strimzi pod monitoring install
+      k8s:
+        state: present
+        namespace: '{{ project_name }}'
+        resource_definition: "{{ lookup('template', 'monitoring/strimzi-pod-monitor.yaml.j2') }}"
+      tags:
+         - monitoring
   
     - name: Create Grafana instance
       k8s:
