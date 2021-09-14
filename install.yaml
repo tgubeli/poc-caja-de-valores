@@ -118,6 +118,8 @@
         state: present
         namespace: '{{ project_name }}'
         resource_definition: "{{ lookup('template', 'kafka.yaml.j2') }}"
+      tags:
+        - create-kafka
 
     - name: Create TOPIC
       k8s:
