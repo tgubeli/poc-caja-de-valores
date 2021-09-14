@@ -13,7 +13,7 @@ spec:
       inter.broker.protocol.version: '2.6'
     version: 2.6.0
     storage:
-      size: '50'
+      size: '50Gi'
       type: persistent-claim
     replicas: 3
     listeners:
@@ -39,7 +39,7 @@ spec:
     groupRegex: ".*"
   zookeeper:
     storage:
-      size: '10'
+      size: '5Gi'
       type: persistent-claim
     replicas: 3
     readinessProbe:
