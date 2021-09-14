@@ -1,0 +1,10 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: grafana-group
+  namespace: {{ monitoring_name }}
+  labels:
+    app: grafana
+spec:
+  targetNamespaces:
+    - {{ monitoring_name }}
