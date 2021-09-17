@@ -15,7 +15,8 @@ import quickfix.field.TransactTime;
 public class MarketDataGenerator implements Runnable {
 
 	private final static Logger log = LoggerFactory.getLogger(MarketDataGenerator.class);
-	private static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=changedate10=015";
+	// private static String msg = "8=FIX.4.49=12835=D34=449=STUN52=20210715-21:06:54.41656=EXEC11=162638321441821=138=340=154=155=VALE59=060=changedate10=015";
+	private static final String msg = "8=FIXT.1.160=changedate9=21335=X34=1485349=BYMA_MDP52=20210902-13:30:05.92056=dmx265-1115=FGW262=HUB562_MDP_16305804053851021=2268=1279=0269=055=PAMP48=PAMP-0003-C-CT-ARS167=CS207=XMEV106=0103-P270=119271=2346=1290=463=310=145";
 
 	private String fixDatePattern = "YYYYMMdd-HH:mm:ss.SSS";
 	private static SimpleDateFormat simpleDateFormat;

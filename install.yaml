@@ -291,6 +291,7 @@
       shell: "oc start-build fix-acceptor-kafka --follow --from-file=fix-acceptor-kafka/target/fix-acceptor-kafka-1.0.0-SNAPSHOT-runner.jar -n {{ project_name }}"
       tags:
          - acceptor-kafka
+         - acceptor-kafka-build
 
     - name: "Wait for following builds to become ready: fix-acceptor-kafka"
       command: 'oc get build -o json -n "{{ project_name }}"'

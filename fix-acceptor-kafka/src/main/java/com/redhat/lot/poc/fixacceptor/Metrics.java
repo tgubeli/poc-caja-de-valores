@@ -167,5 +167,9 @@ public class Metrics {
 		metricsRanges[14][1] = 999999999;
 		
 	}
+
+	public void remove(String sessionID) {
+		metricsPerSession.remove(sessionID);
+	}
 	
 }
