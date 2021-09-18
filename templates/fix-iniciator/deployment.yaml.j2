@@ -36,13 +36,16 @@ spec:
               protocol: TCP
           env:
             - name: JAVA_OPTS_APPEND
-              value: '-XX:MaxMetaspaceSize=1000m'
+              value: '-Xms4096m -Xmx4096m'
+            - GC_CONTAINER_OPTIONS
+              value: '-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:+UseZGC'
           resources:
             limits:
               cpu: '1'
-              memory: 2Gi
+              memory: 5Gi
             requests:
-              memory: 256Mi
+              cpu: 200m
+              memory: 512Mi
           volumeMounts:
             - name: application-config
               readOnly: true
