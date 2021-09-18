@@ -6,15 +6,14 @@ metadata:
 spec:
   kafka:
     config:
-      offsets.topic.replication.factor: 3
-      transaction.state.log.replication.factor: 3
-      transaction.state.log.min.isr: 2
+      offsets.topic.replication.factor: 2
+      transaction.state.log.replication.factor: 2
+      transaction.state.log.min.isr: 1
       log.message.format.version: '2.6'
       inter.broker.protocol.version: '2.6'
     version: 2.6.0
     storage:
-      size: '50Gi'
-      type: persistent-claim
+      type: ephemeral
     replicas: 3
     listeners:
       - name: plain
@@ -39,9 +38,8 @@ spec:
     groupRegex: ".*"
   zookeeper:
     storage:
-      size: '5Gi'
-      type: persistent-claim
-    replicas: 3
+      type: ephemeral
+    replicas: 1
     readinessProbe:
       initialDelaySeconds: 15
       timeoutSeconds: 5
