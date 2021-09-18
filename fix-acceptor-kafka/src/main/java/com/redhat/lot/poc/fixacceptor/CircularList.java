@@ -12,7 +12,7 @@ public class CircularList {
 	private String[] strList;
 	
 
-	public static final int MAX = 2500000;
+	public final int MAX = 2500000;
 	int index = 0;
 	private double currentLoop = 0;
 

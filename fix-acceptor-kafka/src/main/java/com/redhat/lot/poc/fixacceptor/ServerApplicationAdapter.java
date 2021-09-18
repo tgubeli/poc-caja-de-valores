@@ -58,6 +58,9 @@ public class ServerApplicationAdapter implements quickfix.Application {
     @Inject
     Metrics metrics;
 
+    @Inject
+    CircularList list;
+
     private static HashMap<String, FixSessionSender> hashFixSessionSender = new HashMap<>();
 
     public static HashMap<String, FixSessionSender> getHashFixSessionSender() {
@@ -79,7 +82,7 @@ public class ServerApplicationAdapter implements quickfix.Application {
 
     @Override
 	public void onLogon(SessionID sessionID) {
-        FixSessionSender sender = new FixSessionSender(sessionID, metrics);
+        FixSessionSender sender = new FixSessionSender(sessionID, metrics, list);
     	hashFixSessionSender.put(sessionID.toString(), sender);
     	Thread thread = new Thread(sender);
     	thread.start();   	

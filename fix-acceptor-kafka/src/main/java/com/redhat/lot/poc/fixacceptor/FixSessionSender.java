@@ -12,16 +12,17 @@ public class FixSessionSender implements Runnable {
 
 	private int currentIndex = 0;
 	double currentLoop = 0;
-	CircularList list = CircularList.getInstance();
 	private SessionID sessionID;
 	final String dif = "Diferencia msg ";
 	Metrics metrics;
+	CircularList list;
 
 	private boolean active = true;
 	
-	public FixSessionSender(SessionID sessionID, Metrics metrics) {
+	public FixSessionSender(SessionID sessionID, Metrics metrics, CircularList list) {
 		this.sessionID = sessionID;
 		this.metrics = metrics;
+		this.list = list;
 		System.out.println(">>> FixSessionSender created with SessionID " + sessionID.getSenderCompID());
 	}
 
@@ -75,7 +76,7 @@ public class FixSessionSender implements Runnable {
 
 	private void avanzar_punteros_a_lista() {
 		currentIndex++;
-		if (currentIndex == CircularList.MAX) {
+		if (currentIndex == list.MAX) {
 			currentIndex = 0;
 			currentLoop++;
 			System.out.println("llegue al MAX");

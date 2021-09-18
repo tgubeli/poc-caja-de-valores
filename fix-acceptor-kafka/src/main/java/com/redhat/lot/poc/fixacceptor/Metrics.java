@@ -148,14 +148,12 @@ public class Metrics {
 				cant_greater_20ms = cant_greater_20ms + metricsPerRangeTemp[rango]; 
 			}
 			
-			
-			
-			System.out.println(">>>>> TOTAL METRICS: max[" + maxFinal + " ms], min[" + minFinal + " ms], med["
-					+ (mediaFinal / i) + "ms ], \ncant sessions " + sessionIds.length + ", cant_messages=" + cant_msg_copy
-					+ ", msg_per_session=" + (msg_per_session)
-					+ ", msg_sec=" + msg_sec + ", elapsed_time="+ elapsed_time + " s");
-	
-			
+			if (maxFinal != 0 || minFinal != 0 || mediaFinal != 0){
+				System.out.println(">>>>> TOTAL METRICS: max[" + maxFinal + " ms], min[" + minFinal + " ms], med["
+						+ (mediaFinal / i) + "ms ], \ncant sessions " + sessionIds.length + ", cant_messages=" + cant_msg_copy
+						+ ", msg_per_session=" + (msg_per_session)
+						+ ", msg_sec=" + msg_sec + ", elapsed_time="+ elapsed_time + " s");
+			}
 			
 			if (cant_messages > 0 ) {
 				System.out.println("% less than 3 ms = " + less_than_3ms);
@@ -163,18 +161,23 @@ public class Metrics {
 				System.out.println("% less than 20 ms = " + less_than_20ms);
 			}
 	
-			
-			System.out.println(">>>>> TOTAL METRICS CSV, " + maxFinal + "," + minFinal + ","
-					+ (mediaFinal / i) + "," + sessionIds.length 
-					+ "," + msg_sec + ","+ elapsed_time 
-					+ "," + less_than_3ms + "," + less_than_5ms + "," + less_than_20ms + ","
-					+ cant_greater_20ms + "," + less_than_1ms
-					);
+			if (maxFinal != 0 || minFinal != 0 || mediaFinal != 0){
+				System.out.println(">>>>> TOTAL METRICS CSV, " + maxFinal + "," + minFinal + ","
+						+ (mediaFinal / i) + "," + sessionIds.length 
+						+ "," + msg_sec + ","+ elapsed_time 
+						+ "," + less_than_3ms + "," + less_than_5ms + "," + less_than_20ms + ","
+						+ cant_greater_20ms + "," + less_than_1ms
+						);
+			}
 		}
 		// Metrics by time range
-		System.out.println("\t >>>>> METRICS BY TIME RANGE:");
-		for(int j =0; j < metricsRanges.length; j++) {
-			System.out.println("\t\t Entre: "+metricsRanges[j][0]+"ms y "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
+		if (maxFinal != 0 || minFinal != 0 || mediaFinal != 0){
+			System.out.println("\t >>>>> METRICS BY TIME RANGE:");
+			for(int j =0; j < metricsRanges.length; j++) {
+				if (metricsPerRangeTemp[j] != 0){
+					System.out.println("\t\t Entre: "+metricsRanges[j][0]+"ms y "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
+				}
+			}
 		}
 		
 		

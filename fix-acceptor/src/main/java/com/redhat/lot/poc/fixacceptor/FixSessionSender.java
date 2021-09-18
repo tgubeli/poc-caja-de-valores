@@ -50,7 +50,6 @@ public class FixSessionSender implements Runnable {
 					//fixMessage = (Message) msg.clone();
 					fixMessage.getHeader().setField(stringField);
 
-					// Should send to both (Kafka and circular list) or just one ?
 					Session.sendToTarget(fixMessage, sessionID);
 					
 					avanzar_punteros_a_lista();
