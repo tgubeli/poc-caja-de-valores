@@ -86,7 +86,8 @@ public class MarketDataGenerator implements Runnable {
 		for (i = 0; i < (quantity); i++) {
 			
 			if (isKafka) {
-				producer.send(new ProducerRecord<>("marketdata", msg2));
+				producer.send(new ProducerRecord<>("marketdata", "md-key", msg2));
+				// producer.send(new ProducerRecord<>("marketdata", msg2));
 			} else {
 				CircularList.getInstance().insert(msg2);
 			}

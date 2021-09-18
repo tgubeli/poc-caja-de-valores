@@ -38,7 +38,7 @@ public class KafkaProviders {
         config.put("auto.offset.reset", offSetReset);
         config.put("topic", kafkaTopic);
         config.put("bootstrap.servers", kafkaServer);
-        config.put("acks", "1"); // all | -1 | 0 | 1
+        config.put("acks", "0"); // all | -1 | 0 | 1
         config.put("compression.type", "none"); // Valid values are none, gzip, snappy, lz4, or zstd.
         // batch.size
         // linger.ms
