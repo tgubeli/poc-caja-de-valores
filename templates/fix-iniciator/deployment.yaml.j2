@@ -37,8 +37,8 @@ spec:
           env:
             - name: JAVA_OPTS_APPEND
               value: '-Xms4096m -Xmx4096m'
-            - GC_CONTAINER_OPTIONS
-              value: '-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:+UseZGC'
+            - name: GC_CONTAINER_OPTIONS
+              value: '-XX:+UnlockExperimentalVMOptions -XX:+UseZGC'
           resources:
             limits:
               cpu: '1'
