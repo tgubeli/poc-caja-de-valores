@@ -44,6 +44,8 @@ public class KafkaProviders {
     @ConfigProperty(name = "kafka.auto.offset.reset")
     String offSetReset;
 
+    KafkaConsumer<String, String> consumer;
+
     volatile boolean done = false;
     volatile String last;
 
@@ -76,13 +78,13 @@ public class KafkaProviders {
         log.info("\t bootstrap.servers: " + kafkaServer);
         log.info("\t auto.offset.reset: " + offSetReset);
         
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config,
+        consumer = new KafkaConsumer<>(config,
                 new StringDeserializer(),
                 new StringDeserializer());
 
         consumer.subscribe(Collections.singleton(kafkaTopic));
         new Thread(() -> {
-            while (! done) {
+            while (true) {
                 final ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofMillis(1));
 
                 consumerRecords.forEach(record -> {
@@ -93,11 +95,12 @@ public class KafkaProviders {
                     CircularList.getInstance().insert(record.value());
                 });
             }
-            consumer.close();
         }).start();
     }
 
-    void onShutdown(@Observes ShutdownEvent env) {               
+    void onShutdown(@Observes ShutdownEvent env) {
+        if (consumer != null)           
+            consumer.close();
         this.done = false;
     }
 
