@@ -14,14 +14,10 @@ import javax.inject.Inject;
 public class Metrics {
 
 	private Map<String, double[]> metricsPerSession = new HashMap<String, double[]>(130);
-
-	@Inject
-	Logger log;
-
-	@PostConstruct
-	public void onInit(){
-		setRanges();
-	}
+	
+	private long cant_messages=0;
+	
+	private long time = System.currentTimeMillis()-1;
 	
 	/**
 	 * Metrics per millisecond ranges, there are 15 ranges with a counter for each one:
@@ -32,6 +28,14 @@ public class Metrics {
 	private int[][] metricsRanges = new int[15][2];
 	
 	
+	@Inject
+	Logger log;
+
+	@PostConstruct
+	public void onInit(){
+		setRanges();
+	}
+
 	/**
 	 * 
 	 * @param sessionID
@@ -45,6 +49,8 @@ public class Metrics {
 		long endMilis = endDateTime.atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
 		
 		double diferenciaTimestamp = endMilis - initMilis;
+		
+		// System.out.println("Milis: Init: "+initMilis+", End: "+endMilis+", Dif: "+diferenciaTimestamp);
 		
 		if(!metricsPerSession.containsKey(sessionID)) {
 			double[] valores = {diferenciaTimestamp,diferenciaTimestamp,diferenciaTimestamp,1d}; // {min,max,sumaTimestamp, cantidadMensajes}
@@ -66,6 +72,7 @@ public class Metrics {
 		}
 		
 		addRangeMetricCount((int) diferenciaTimestamp);
+		cant_messages++;
 			
 	}
 	
@@ -86,11 +93,13 @@ public class Metrics {
 		Map<String, double[]> hashMetricsTemp = new HashMap<String, double[]>(130);
 		hashMetricsTemp = metricsPerSession;
 		int[] metricsPerRangeTemp = metricsPerRange;
+		long cant_msg_copy = cant_messages;
 		
 		// delete/reset the main matrics Map (because meanwhile we print the actual metrics, 
 		// other new metrics could appear and should be added/saved)
 		metricsPerSession = new HashMap<String, double[]>(130);
 		metricsPerRange = new int[15];
+		cant_messages=0;
 		
 		Object[] sessionIds = (Object[]) hashMetricsTemp.keySet().toArray();
 		double media = 0;
@@ -98,11 +107,13 @@ public class Metrics {
 		double minFinal = 0;
 		double mediaFinal = 0;
 		
+		
+		
 		// print/log all metrics per Session ID and collect/calculate a Total Metrics values
 		int i = 0;
 		for(double[] valoresActuales : hashMetricsTemp.values()) {
 			media = valoresActuales[2] / valoresActuales[3];
-			log.info(">>> Metrics Resume for SessionID ["+(String)sessionIds[i]+"]: max["+valoresActuales[1]+"], min["+valoresActuales[0]+"], med["+media+"]");
+			System.out.println(">>> Metrics Resume for SessionID ["+(String)sessionIds[i]+"]: max["+valoresActuales[1]+"], min["+valoresActuales[0]+"], med["+media+"]");
 			
 			if( valoresActuales[0] < minFinal)
 				minFinal = valoresActuales[0];
@@ -114,18 +125,60 @@ public class Metrics {
 			i=i+1;
 		}
 		
-		if (maxFinal != 0 || minFinal != 0 || mediaFinal != 0){
-			log.info("TOTAL METRICS: max["+maxFinal+"], min["+minFinal+"], med["+(mediaFinal/i)+"]");
+		long msg_per_session= 0;
+		if (sessionIds.length>0) {
+			msg_per_session= (cant_msg_copy / sessionIds.length);
+		}
+		long elapsed_time = (System.currentTimeMillis() - time)/1000;
+		long msg_sec=0;
+		if (elapsed_time > 0 ) { 
+			msg_sec = msg_per_session / elapsed_time;
+		}
+		
+		if (i>0) {
 			
-			log.info("\t METRICS BY TIME RANGE:");
-			for(int j =0; j < metricsRanges.length; j++) {
-				if (metricsPerRangeTemp[j] != 0){
-					log.info("\t\t "+metricsRanges[j][0]+"ms - "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
-				}
+			String less_than_1ms = ""+ ((float) (metricsPerRangeTemp[0])/cant_msg_copy)*100;
+			String less_than_3ms = ""+ ((float) (metricsPerRangeTemp[0]+metricsPerRangeTemp[1])/cant_msg_copy)*100;
+			//((float) (metricsPerRangeTemp[0]+metricsPerRangeTemp[1])/cant_messages)*100)
+			String less_than_5ms = ""+  ((float)(metricsPerRangeTemp[0]+metricsPerRangeTemp[1]+metricsPerRangeTemp[2])/cant_msg_copy)*100;
+			String less_than_20ms = ""+  ((float)(metricsPerRangeTemp[0]+metricsPerRangeTemp[1]+metricsPerRangeTemp[2]+metricsPerRangeTemp[3]+metricsPerRangeTemp[4]+metricsPerRangeTemp[5]+metricsPerRangeTemp[6])/cant_msg_copy)*100;
+			
+			int cant_greater_20ms=0;
+			for (int rango =7; rango < 15; rango++ ) {
+				cant_greater_20ms = cant_greater_20ms + metricsPerRangeTemp[rango]; 
 			}
+			
+			
+			
+			System.out.println(">>>>> TOTAL METRICS: max[" + maxFinal + " ms], min[" + minFinal + " ms], med["
+					+ (mediaFinal / i) + "ms ], \ncant sessions " + sessionIds.length + ", cant_messages=" + cant_msg_copy
+					+ ", msg_per_session=" + (msg_per_session)
+					+ ", msg_sec=" + msg_sec + ", elapsed_time="+ elapsed_time + " s");
+	
+			
+			
+			if (cant_messages > 0 ) {
+				System.out.println("% less than 3 ms = " + less_than_3ms);
+				System.out.println("% less than 5 ms = " + less_than_5ms);
+				System.out.println("% less than 20 ms = " + less_than_20ms);
+			}
+	
+			
+			System.out.println(">>>>> TOTAL METRICS CSV, " + maxFinal + "," + minFinal + ","
+					+ (mediaFinal / i) + "," + sessionIds.length 
+					+ "," + msg_sec + ","+ elapsed_time 
+					+ "," + less_than_3ms + "," + less_than_5ms + "," + less_than_20ms + ","
+					+ cant_greater_20ms + "," + less_than_1ms
+					);
+		}
+		// Metrics by time range
+		System.out.println("\t >>>>> METRICS BY TIME RANGE:");
+		for(int j =0; j < metricsRanges.length; j++) {
+			System.out.println("\t\t Entre: "+metricsRanges[j][0]+"ms y "+metricsRanges[j][1]+"ms = "+metricsPerRangeTemp[j]);
 		}
 		
 		
+		time = System.currentTimeMillis();
 		
 	}
 	
@@ -148,8 +201,8 @@ public class Metrics {
 		metricsRanges[5][0] = 10;
 		metricsRanges[5][1] = 15;
 		metricsRanges[6][0] = 16;
-		metricsRanges[6][1] = 30;
-		metricsRanges[7][0] = 31;
+		metricsRanges[6][1] = 20;
+		metricsRanges[7][0] = 21;
 		metricsRanges[7][1] = 90;
 		metricsRanges[8][0] = 91;
 		metricsRanges[8][1] = 150;
