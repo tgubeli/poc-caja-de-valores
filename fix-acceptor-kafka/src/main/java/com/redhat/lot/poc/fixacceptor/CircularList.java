@@ -14,7 +14,6 @@ public class CircularList {
 
 	public static final int MAX = 2500000;
 	int index = 0;
-	private static CircularList singleton;
 	private double currentLoop = 0;
 
 	public int getIndex() {
@@ -75,18 +74,9 @@ public class CircularList {
 	public String getStr (int i) {
 		return strList[i];
 	}
-	
-	
-	public static CircularList getInstance() {
-		if (singleton == null ) {
-			singleton = new CircularList();
-		}
-		return singleton;
-	}
 
 	public double getCurrentLoop() {
 		return currentLoop;
 	}
-	
 
 }

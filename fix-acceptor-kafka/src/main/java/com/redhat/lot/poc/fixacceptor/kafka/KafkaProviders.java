@@ -44,6 +44,9 @@ public class KafkaProviders {
     @ConfigProperty(name = "kafka.auto.offset.reset")
     String offSetReset;
 
+    @Inject
+    CircularList list;
+
     KafkaConsumer<String, String> consumer;
 
     volatile boolean done = false;
@@ -92,7 +95,7 @@ public class KafkaProviders {
                     //         record.key(), record.value(),
                     //         record.partition(), record.offset());
                     // last = record.key() + "-" + record.value();
-                    CircularList.getInstance().insert(record.value());
+                    list.insert(record.value());
                 });
             }
         }).start();

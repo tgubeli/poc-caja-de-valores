@@ -88,13 +88,14 @@ public class MarketDataGenerator implements Runnable {
 			if (isKafka) {
 				producer.send(new ProducerRecord<>("marketdata", "md-key", msg2));
 				// producer.send(new ProducerRecord<>("marketdata", msg2));
+				System.out.printf("> Messages sent to Kafka: %d\r", totalMessagesGenerated);
 			} else {
+				System.out.printf("> Messages sent to Circular List: %d\r", totalMessagesGenerated);
 				CircularList.getInstance().insert(msg2);
 			}
 		}
 		
 		totalMessagesGenerated = totalMessagesGenerated + i;
-		System.out.printf("> Messages sent to Kafka: %d\r", totalMessagesGenerated);
 		time_left = 1000000 - (int) (System.nanoTime() - initPerSecondTime) ;
 		if (time_left < 0) {
 			//means that took more than 1 milisecond
