@@ -12,8 +12,8 @@ zk_nodes: 3
 kafka_brokers: 3
 
 topic_name: marketdata
-offsets_topic_replication_factor: 3
-transaction_state_log_replication.factor: 3
+offsets_topic_replication_factor: 2
+transaction_state_log_replication.factor: 2
 transaction_state_log_min_isr: 2
-partitions: 130
-replicas: 2
+partitions: 4
+replicas: 1
